@@ -1,625 +1,442 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NW Calgary Real Estate Portal | Map & Property Search</title>
-  
-  <!-- Leaflet / OpenStreetMap CSS & JS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NW Calgary Single-Detached Home Showcase</title>
+
+  <!-- Leaflet CSS for Map Rendering -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
   <style>
-    :root {
-      --realtor-red: #D32F2F;
-      --realtor-dark-red: #B71C1C;
-      --primary-navy: #1A2530;
-      --secondary-blue: #0288D1;
-      --bg-light: #F4F6F8;
-      --card-bg: #FFFFFF;
-      --text-main: #212121;
-      --text-muted: #616161;
-      --border-color: #E0E0E0;
-    }
+    /* Reset & Viewport Constraints */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; width: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f8; color: #2c3e50; overflow: hidden; }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-    html, body { height: 100%; background-color: var(--bg-light); color: var(--text-main); overflow: hidden; }
+    /* Header Styling */
+    header { height: 65px; background-color: #1a252f; color: #ffffff; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1000; position: relative; }
+    header h1 { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.5px; }
+    header .header-contact { font-size: 0.8rem; color: #cbd5e0; line-height: 1.3; text-align: right; }
+    header .header-contact strong { color: #27ae60; }
+    header .header-actions { display: flex; gap: 12px; align-items: center; }
+    header button { background-color: #27ae60; color: #ffffff; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: background-color 0.2s; }
+    header button:hover { background-color: #219150; }
 
-    /* Top Navigation Bar */
-    header {
-      height: 56px;
-      background-color: var(--primary-navy);
-      color: white;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 20px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.15);
-      z-index: 1000;
-      position: relative;
-    }
-    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.1rem; }
-    .brand-logo { background: var(--realtor-red); color: white; padding: 4px 8px; border-radius: 4px; font-weight: 900; letter-spacing: 0.5px; }
+    /* Controls & Filter Bar */
+    .filter-bar { background-color: #ffffff; padding: 12px 20px; border-bottom: 1px solid #e2e8f0; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; z-index: 999; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .filter-group { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 500; }
+    .filter-group label { color: #4a5568; }
+    .filter-group select { padding: 6px 10px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 0.85rem; background-color: #fff; }
+    .checkbox-group { display: flex; gap: 10px; align-items: center; font-size: 0.8rem; color: #4a5568; margin-left: auto; }
+    .checkbox-group label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
 
-    /* Controls Header Bar */
-    .filter-bar {
-      background: white;
-      border-bottom: 1px solid var(--border-color);
-      display: flex;
-      flex-direction: column;
-      padding: 10px 20px;
-      gap: 10px;
-      z-index: 999;
-      position: relative;
-    }
-    .filter-row-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 15px;
-      flex-wrap: wrap;
-    }
-    .filter-group { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-    .filter-bar label { font-size: 0.82rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
-    .filter-bar select {
-      padding: 6px 10px;
-      border: 1px solid var(--border-color);
-      border-radius: 4px;
-      outline: none;
-      background: white;
-      font-size: 0.88rem;
-      color: var(--text-main);
-    }
+    /* Split Screen Layout Container */
+    .app-container { display: flex; height: calc(100vh - 115px); width: 100vw; overflow: hidden; }
 
-    /* Feature Checkbox Filters */
-    .checkbox-group {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      background: #F8F9FA;
-      padding: 6px 12px;
-      border-radius: 6px;
-      border: 1px solid #ECEFF1;
-      flex-wrap: wrap;
-    }
-    .checkbox-label {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: var(--primary-navy);
-      cursor: pointer;
-      text-transform: none !important;
-    }
-    .checkbox-label input[type="checkbox"] {
-      accent-color: var(--realtor-red);
-      width: 15px;
-      height: 15px;
-      cursor: pointer;
-    }
+    /* Left Pane: Interactive Leaflet Map */
+    #map-pane { flex: 1 1 50%; height: 100%; z-index: 1; }
 
-    .refresh-btn {
-      background-color: var(--realtor-red);
-      color: white;
-      border: none;
-      padding: 7px 14px;
-      border-radius: 4px;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.85rem;
-      transition: background 0.2s ease;
-    }
-    .refresh-btn:hover { background-color: var(--realtor-dark-red); }
+    /* Map Custom Price Pill Marker Styling */
+    .price-pill-marker { background: #2c3e50; color: #ffffff; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; border: 2px solid #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); white-space: nowrap; transition: all 0.2s ease-in-out; text-align: center; }
+    .price-pill-marker.active-pill { background: #e74c3c; transform: scale(1.15); z-index: 1000 !important; border-color: #ffffff; }
 
-    .results-count { font-size: 0.88rem; color: var(--text-muted); font-weight: 600; }
+    /* Right Pane: Property Grid Container */
+    #listings-pane { flex: 1 1 50%; height: 100%; overflow-y: auto; padding: 15px; background-color: #edf2f7; display: flex; flex-direction: column; }
+    .results-info { font-size: 0.85rem; color: #718096; margin-bottom: 12px; font-weight: 500; display: flex; justify-content: space-between; }
 
-    /* Main Split Screen Layout (Map Left + Grid Right) */
-    .app-viewport {
-      display: flex;
-      height: calc(100vh - 120px);
-      width: 100%;
-      position: relative;
-    }
+    /* Cards Grid */
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 15px; }
 
-    /* Left Pane - Interactive Map */
-    #mapContainer {
-      flex: 1.1;
-      height: 100%;
-      position: relative;
-      z-index: 1;
-    }
+    /* Property Card Design */
+    .property-card { background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; position: relative; }
+    .property-card:hover, .property-card.highlighted { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); border-color: #3182ce; }
+    .property-card.highlighted { border: 2px solid #e74c3c; }
 
-    /* Realtor.ca Style Custom Price Pill Markers */
-    .realtor-price-pill {
-      background: white;
-      color: var(--primary-navy);
-      border: 1px solid #B0BEC5;
-      border-radius: 16px;
-      padding: 3px 8px;
-      font-weight: 700;
-      font-size: 11px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-      white-space: nowrap;
-      transition: transform 0.15s ease, background-color 0.15s ease, color 0.15s ease;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .realtor-price-pill:hover, .realtor-price-pill.active {
-      background-color: var(--realtor-red) !important;
-      color: white !important;
-      border-color: var(--realtor-dark-red) !important;
-      transform: scale(1.15);
-      z-index: 9999 !important;
-    }
+    .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+    .card-price { font-size: 1.25rem; font-weight: 800; color: #2b6cb0; }
+    .card-mls { font-size: 0.7rem; color: #a0aec0; font-weight: 600; text-transform: uppercase; }
+    .card-address { font-size: 0.9rem; font-weight: 700; color: #2d3748; margin-bottom: 2px; }
+    .card-community { font-size: 0.8rem; color: #718096; font-weight: 500; margin-bottom: 10px; }
 
-    .school-pill {
-      background: var(--primary-navy);
-      color: white;
-      border: 2px solid white;
-      border-radius: 12px;
-      padding: 4px 8px;
-      font-weight: 800;
-      font-size: 11px;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.3);
-      white-space: nowrap;
-    }
+    /* Grid Specs Section */
+    .specs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.75rem; background: #f7fafc; padding: 8px; border-radius: 6px; margin-bottom: 10px; border: 1px solid #edf2f7; }
+    .spec-item { color: #4a5568; }
+    .spec-item strong { color: #1a202c; }
 
-    /* Right Pane - Scrollable Property Cards List */
-    .cards-pane {
-      flex: 1;
-      height: 100%;
-      overflow-y: auto;
-      padding: 16px;
-      background-color: var(--bg-light);
-    }
+    /* Highlights & Tags */
+    .tag-list { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+    .tag { font-size: 0.65rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: #e2e8f0; color: #4a5568; }
+    .tag.highlight { background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; }
+    .tag.suite { background: #feebc8; color: #c05621; border: 1px solid #fbd38d; }
 
-    .cards-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-      gap: 16px;
-    }
+    /* Commute & Open House Info */
+    .commute-block { font-size: 0.72rem; color: #4a5568; border-top: 1px border-dashed #e2e8f0; padding-top: 6px; margin-bottom: 10px; }
+    .commute-block div { display: flex; align-items: center; gap: 4px; margin-bottom: 2px; }
 
-    .card {
-      background: var(--card-bg);
-      border-radius: 8px;
-      border: 1px solid var(--border-color);
-      overflow: hidden;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
-      display: flex;
-      flex-direction: column;
-      transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
-      cursor: pointer;
-    }
-    .card:hover, .card.highlighted {
-      border-color: var(--realtor-red);
-      box-shadow: 0 6px 16px rgba(211, 47, 47, 0.2);
-      transform: translateY(-2px);
-    }
+    .contact-line { font-size: 0.72rem; font-weight: 700; color: #2b6cb0; background: #ebf8ff; padding: 4px 6px; border-radius: 4px; margin-bottom: 10px; text-align: center; }
 
-    .card-header { padding: 12px 14px 8px 14px; border-bottom: 1px solid #F0F0F0; background: #FAFAFA; }
-    .price-row { display: flex; justify-content: space-between; align-items: center; }
-    .price { font-size: 1.35rem; font-weight: 800; color: var(--realtor-red); }
-    .builder-tag { background: #E1F5FE; color: #0277BD; font-size: 0.72rem; font-weight: 700; padding: 2px 6px; border-radius: 3px; }
-    .address { font-size: 0.95rem; font-weight: 700; margin-top: 3px; }
-    .community { color: var(--text-muted); font-size: 0.8rem; font-weight: 500; }
+    /* Card Action Links */
+    .card-actions { display: flex; gap: 6px; margin-top: auto; }
+    .btn-action { flex: 1; text-align: center; text-decoration: none; padding: 7px 4px; font-size: 0.75rem; font-weight: 700; border-radius: 4px; transition: background 0.2s; }
+    .btn-realtor { background-color: #d32f2f; color: #ffffff; }
+    .btn-realtor:hover { background-color: #b71c1c; }
+    .btn-remax { background-color: #00529b; color: #ffffff; }
+    .btn-remax:hover { background-color: #003366; }
 
-    .card-body { padding: 12px 14px; flex-grow: 1; }
+    /* Pagination Controls */
+    .pagination-container { text-align: center; margin: 20px 0 10px 0; }
+    .btn-load-more { background: #3182ce; color: white; border: none; padding: 10px 24px; font-size: 0.9rem; font-weight: 700; border-radius: 6px; cursor: pointer; transition: background 0.2s; }
+    .btn-load-more:hover { background: #2b6cb0; }
 
-    .badge-container { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
-    .badge { font-size: 0.68rem; font-weight: 700; padding: 3px 6px; border-radius: 3px; }
-    .badge-open-house { background: #E8F5E9; color: #2E7D32; }
-    .badge-suite { background: #FFF8E1; color: #F57F17; }
-
-    .specs { list-style: none; margin-bottom: 10px; font-size: 0.82rem; }
-    .specs li { margin-bottom: 3px; display: flex; justify-content: space-between; border-bottom: 1px dashed #E0E0E0; padding-bottom: 2px; }
-    .specs li span { font-weight: 600; text-align: right; }
-    .highlight-spec { color: #D32F2F; font-weight: 700 !important; }
-
-    .distances {
-      background: #F5F5F5;
-      padding: 8px 10px;
-      border-radius: 4px;
-      font-size: 0.78rem;
-      margin-bottom: 10px;
-    }
-
-    .card-footer { padding: 10px 14px; background: #FAFAFA; border-top: 1px solid var(--border-color); }
-    .btn {
-      display: block;
-      width: 100%;
-      text-align: center;
-      background: var(--primary-navy);
-      color: white;
-      padding: 8px;
-      border-radius: 4px;
-      text-decoration: none;
-      font-weight: 700;
-      font-size: 0.82rem;
-      transition: background 0.2s;
-      cursor: pointer;
-      border: none;
-    }
-    .btn:hover { background: var(--realtor-red); }
-
-    .load-more-container { text-align: center; margin: 20px 0 30px 0; }
-    .load-more-btn {
-      background: var(--realtor-red);
-      color: white;
-      border: none;
-      padding: 10px 28px;
-      border-radius: 20px;
-      font-size: 0.9rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.2s ease;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    }
-    .load-more-btn:hover { background: var(--realtor-dark-red); }
-
-    /* Responsive adjustments */
+    /* Responsive Adjustments */
     @media (max-width: 900px) {
-      .app-viewport { flex-direction: column; overflow-y: auto; height: auto; }
-      #mapContainer { height: 320px; flex: none; }
-      .cards-pane { flex: none; height: auto; overflow: visible; }
+      .app-container { flex-direction: column; height: auto; }
+      #map-pane { height: 350px; flex: none; }
+      #listings-pane { height: auto; flex: none; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Top Brand Navigation Header -->
+  <!-- Header -->
   <header>
-    <div class="brand">
-      <span class="brand-logo">REALTOR®</span>
-      <span>Calgary NW Property Finder</span>
+    <div>
+      <h1>NW Calgary Single-Detached Home Showcase</h1>
+    </div>
+    <div class="header-actions">
+      <div class="header-contact">
+        Inquiries & Showings: <strong>403-263-0530</strong> (CREB® Direct)<br>
+        Open House Inquiries: <strong>1-800-842-2732</strong>
+      </div>
+      <button onclick="location.reload(true)">🔄 Refresh Live</button>
     </div>
   </header>
 
-  <!-- Filter & Realtime Controls Bar -->
+  <!-- Filter Control Bar -->
   <div class="filter-bar">
-    <div class="filter-row-top">
-      <div class="filter-group">
-        <div>
-          <label for="communityFilter">Community:</label>
-          <select id="communityFilter" onchange="resetAndProcess()">
-            <option value="all">All NW Communities</option>
-            <option value="Ambleton">Ambleton</option>
-            <option value="Arbour Lake">Arbour Lake</option>
-            <option value="Carrington">Carrington</option>
-            <option value="Citadel">Citadel</option>
-            <option value="Evanston">Evanston</option>
-            <option value="Glacier Ridge">Glacier Ridge</option>
-            <option value="Haskayne">Haskayne / Crimson Ridge</option>
-            <option value="Hawkwood">Hawkwood</option>
-            <option value="Nolan Hill">Nolan Hill</option>
-            <option value="Ranchlands">Ranchlands</option>
-            <option value="Rockland Park">Rockland Park</option>
-            <option value="Royal Oak">Royal Oak</option>
-            <option value="Tuscany">Tuscany</option>
-            <option value="Varsity">Varsity</option>
-          </select>
-        </div>
-
-        <div>
-          <label for="yearFilter">Year Built:</label>
-          <select id="yearFilter" onchange="resetAndProcess()">
-            <option value="all">Any Year</option>
-            <option value="2026">2026</option>
-            <option value="2025">2025+</option>
-            <option value="2024">2024+</option>
-            <option value="2023">2023+</option>
-          </select>
-        </div>
-
-        <div>
-          <label for="sortOrder">Sort By:</label>
-          <select id="sortOrder" onchange="resetAndProcess()">
-            <option value="price-asc">Price: Low to High</option>
-            <option value="price-desc">Price: High to Low</option>
-            <option value="dist-asc">Transit to Aberhart: Nearest</option>
-            <option value="year-desc">Year Built: Newest</option>
-          </select>
-        </div>
-
-        <button class="refresh-btn" id="refreshBtn" onclick="realtimeRefresh()">
-          🔄 Refresh Live
-        </button>
-      </div>
-
-      <div class="results-count" id="resultsCount">Showing 0 properties</div>
+    <div class="filter-group">
+      <label for="filter-community">Community:</label>
+      <select id="filter-community" onchange="applyFilters()">
+        <option value="ALL">All NW Communities</option>
+        <option value="Ambleton">Ambleton</option>
+        <option value="Arbour Lake">Arbour Lake</option>
+        <option value="Brentwood">Brentwood</option>
+        <option value="Citadel">Citadel</option>
+        <option value="Hawkwood">Hawkwood</option>
+        <option value="Nolan Hill">Nolan Hill</option>
+        <option value="Royal Oak">Royal Oak</option>
+        <option value="Ranchlands">Ranchlands</option>
+        <option value="Tuscany">Tuscany</option>
+        <option value="Varsity">Varsity</option>
+      </select>
     </div>
 
-    <!-- Nice-To-Have Checkbox Filters -->
+    <!-- Direction / Facing Dropdown -->
+    <div class="filter-group">
+      <label for="filter-facing">Facing Direction:</label>
+      <select id="filter-facing" onchange="applyFilters()">
+        <option value="ALL">All Orientations</option>
+        <option value="East">East Facing</option>
+        <option value="West">West Facing</option>
+        <option value="North">North Facing</option>
+        <option value="South">South Facing</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="filter-year">Min Year Built:</label>
+      <select id="filter-year" onchange="applyFilters()">
+        <option value="0">Any Year</option>
+        <option value="2026">2026 (Brand New)</option>
+        <option value="2024">2024+</option>
+        <option value="2020">2020+</option>
+        <option value="2010">2010+</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="filter-sort">Sort By:</label>
+      <select id="filter-sort" onchange="applyFilters()">
+        <option value="price-asc">Price: Low to High</option>
+        <option value="price-desc">Price: High to Low</option>
+        <option value="transit-asc">Aberhart Commute (Fastest)</option>
+        <option value="year-desc">Newest First</option>
+      </select>
+    </div>
+
     <div class="checkbox-group">
-      <span style="font-size:0.8rem; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Must Have / Features:</span>
-      <label class="checkbox-label"><input type="checkbox" id="chkWalkout" onchange="resetAndProcess()"> Walk-Out Basement</label>
-      <label class="checkbox-label"><input type="checkbox" id="chkOpenBelow" onchange="resetAndProcess()"> Open to Below</label>
-      <label class="checkbox-label"><input type="checkbox" id="chkTerrace" onchange="resetAndProcess()"> 3rd Floor Roof Terrace</label>
-      <label class="checkbox-label"><input type="checkbox" id="chkSuite" onchange="resetAndProcess()"> Legal Basement Suite</label>
+      <label><input type="checkbox" id="chk-walkout" onchange="applyFilters()"> Walk-Out</label>
+      <label><input type="checkbox" id="chk-suite" onchange="applyFilters()"> Legal Suite</label>
+      <label><input type="checkbox" id="chk-below" onchange="applyFilters()"> Open to Below</label>
+      <label><input type="checkbox" id="chk-terrace" onchange="applyFilters()"> Roof Terrace</label>
     </div>
   </div>
 
-  <!-- Realtor.ca Split-Screen Main Container -->
-  <div class="app-viewport">
-    
-    <!-- Left interactive map pane -->
-    <div id="mapContainer"></div>
+  <!-- Main Viewport Layout -->
+  <div class="app-container">
+    <!-- Map Canvas -->
+    <div id="map-pane"></div>
 
-    <!-- Right scrollable property listings list pane -->
-    <div class="cards-pane" id="cardsPane">
-      <div class="cards-grid" id="propertyGrid"></div>
+    <!-- Scrollable Cards Grid -->
+    <div id="listings-pane">
+      <div class="results-info">
+        <span id="results-count">Showing 0 listings</span>
+        <span>Target School: William Aberhart High</span>
+      </div>
 
-      <div class="load-more-container" id="loadMoreContainer">
-        <button class="load-more-btn" id="loadMoreBtn" onclick="loadMore()">Load More Listings (+9)</button>
+      <div id="cards-grid" class="cards-grid"></div>
+
+      <div class="pagination-container">
+        <button id="btn-load-more" class="btn-load-more" onclick="loadMore()">Load More Listings (+9)</button>
       </div>
     </div>
-
   </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
   <script>
-    // NW Communities Dataset
-    const communities = [
-      { name: "Ambleton", lat: 51.1710, lng: -114.1350, distMin: 20, distKm: 13 },
-      { name: "Carrington", lat: 51.1760, lng: -114.1160, distMin: 22, distKm: 14 },
-      { name: "Glacier Ridge", lat: 51.1820, lng: -114.1600, distMin: 21, distKm: 14 },
-      { name: "Haskayne", lat: 51.1030, lng: -114.2500, distMin: 16, distKm: 11 },
-      { name: "Hawkwood", lat: 51.1180, lng: -114.1720, distMin: 12, distKm: 8 },
-      { name: "Ranchlands", lat: 51.1100, lng: -114.1850, distMin: 11, distKm: 7 },
-      { name: "Rockland Park", lat: 51.0990, lng: -114.2300, distMin: 15, distKm: 10 },
-      { name: "Nolan Hill", lat: 51.1630, lng: -114.1680, distMin: 18, distKm: 13 },
-      { name: "Evanston", lat: 51.1680, lng: -114.1220, distMin: 20, distKm: 14 },
-      { name: "Arbour Lake", lat: 51.1290, lng: -114.2050, distMin: 14, distKm: 9 },
-      { name: "Royal Oak", lat: 51.1480, lng: -114.2120, distMin: 16, distKm: 11 },
-      { name: "Citadel", lat: 51.1450, lng: -114.1880, distMin: 15, distKm: 10 },
-      { name: "Tuscany", lat: 51.1250, lng: -114.2400, distMin: 17, distKm: 12 },
-      { name: "Varsity", lat: 51.0880, lng: -114.1450, distMin: 6, distKm: 3 }
-    ];
+    // System State Variables
+    let propertiesData = [];
+    let filteredProperties = [];
+    let displayedCount = 18;
+    const PAGE_INCREMENT = 9;
+    let map;
+    let markersMap = new Map();
 
-    const builders = ["Mattamy Homes", "Shane Homes", "Morrison Homes", "Trico Homes", "Jayman BUILT", "Broadview Homes", "Excel Homes", "Truman Homes", "Cedarglen Homes", "Pacesetter Homes"];
-    const streets = ["Way", "Drive", "Terrace", "Close", "Boulevard", "Place", "Crescent", "Street", "Road", "Common", "Heights"];
+    // Generate Sample Properties across NW Calgary
+    function generateProperties() {
+      const communities = [
+        { name: "Ambleton", lat: 51.1720, lng: -114.1360, minTime: 22 },
+        { name: "Arbour Lake", lat: 51.1270, lng: -114.2080, minTime: 18 },
+        { name: "Brentwood", lat: 51.0880, lng: -114.1280, minTime: 5 },
+        { name: "Citadel", lat: 51.1410, lng: -114.1850, minTime: 20 },
+        { name: "Hawkwood", lat: 51.1220, lng: -114.1780, minTime: 16 },
+        { name: "Nolan Hill", lat: 51.1680, lng: -114.1680, minTime: 24 },
+        { name: "Ranchlands", lat: 51.1120, lng: -114.1720, minTime: 14 },
+        { name: "Royal Oak", lat: 51.1500, lng: -114.2120, minTime: 22 },
+        { name: "Tuscany", lat: 51.1280, lng: -114.2380, minTime: 21 },
+        { name: "Varsity", lat: 51.0890, lng: -114.1480, minTime: 6 }
+      ];
 
-    function generateProperties(count) {
-      const list = [];
-      for (let i = 1; i <= count; i++) {
+      const builders = ["Broadview Homes", "Morrison Homes", "Jayman BUILT", "Sterling Homes", "Cardel Homes", "Trico Homes"];
+      const orientations = ["North", "South", "East", "West"];
+
+      const dataset = [];
+
+      for (let i = 1; i <= 100; i++) {
         const comm = communities[i % communities.length];
-        const builder = builders[i % builders.length];
-        const streetType = streets[i % streets.length];
-        const stNum = 10 + (i * 7) % 350;
-        const priceNum = 550000 + (i * 4750) % 450000;
-        const year = 2023 + (i % 4);
-        const sqft = 1650 + (i * 15) % 1100;
-        const mlsNum = 2348000 + i;
+        const priceNum = Math.floor(Math.random() * (450)) * 1000 + 550000;
+        const year = 2018 + (i % 9);
+        const mlsId = `A23${48000 + i}`;
+        const stNum = 10 + (i * 3);
+        const addressStr = `${stNum} ${comm.name} Way NW`;
 
-        const latOffset = ((i % 10) - 5) * 0.0022;
-        const lngOffset = ((i % 8) - 4) * 0.0028;
+        const hasWalkout = (i % 3 === 0);
+        const hasSuite = (i % 2 === 0);
+        const hasBelow = (i % 4 === 0);
+        const hasTerrace = (i % 7 === 0);
 
-        list.push({
-          id: `A${mlsNum}`,
-          address: `${stNum} ${comm.name} ${streetType} NW`,
+        const commSlug = comm.name.toLowerCase().replace(/\s+/g, '-');
+        const realtorUrl = `https://www.realtor.ca/ab/calgary/${commSlug}/real-estate`;
+        const remaxUrl = `https://www.remax.ca/ab/calgary-real-estate?query=${encodeURIComponent(addressStr + ', Calgary')}`;
+
+        dataset.push({
+          id: mlsId,
+          address: addressStr,
           community: comm.name,
           priceNumeric: priceNum,
           price: `$${priceNum.toLocaleString()}`,
           priceShort: `$${Math.round(priceNum / 1000)}k`,
           yearBuilt: year,
-          facing: (i % 2 === 0) ? "East" : "West",
-          garage: (i % 3 === 0) ? "Double Detached" : "Double Attached",
-          mainBedBath: (i % 2 === 0) ? "Yes (1 Bed + Full Bath)" : "Yes (Main Level Bed)",
-          suiteStatus: (i % 3 === 0) ? "Legal Basement Suite" : (i % 3 === 1 ? "Legal Suite Approved" : "Legal Suite Rough-In"),
-          hasLegalSuite: (i % 3 === 0),
-          status: (i % 4 === 0) ? "Move-In Ready" : (i % 4 === 1 ? "Quick Possession" : "Under Construction"),
-          openHouse: (i % 2 === 0) ? "Sat & Sun 1:00 PM - 4:00 PM" : "Sat & Sun 12:00 PM - 3:00 PM",
-          distAberhartMin: comm.distMin,
-          distAberhart: `${comm.distKm} km (${comm.distMin} min drive / Bus Express)`,
-          distDowntown: `${comm.distKm + 4} km (${comm.distMin + 5} min drive)`,
-          builder: builder,
-          walkout: (i % 3 !== 0) ? "Yes" : "No",
-          openToBelow: (i % 2 === 0) ? "Yes" : "No",
-          terrace: (i % 5 === 0) ? "Yes" : "No",
-          spacious: `${sqft.toLocaleString()} sq ft`,
-          lat: comm.lat + latOffset,
-          lng: comm.lng + lngOffset
+          facing: orientations[i % orientations.length],
+          garage: (i % 2 === 0) ? "Double Attached" : "Double Detached",
+          mainBedBath: (i % 3 === 0) ? "Yes (1 Bed + Full Bath)" : "No",
+          suiteStatus: hasSuite ? "Legal Basement Suite" : "Unfinished / Standard",
+          hasLegalSuite: hasSuite,
+          status: (year === 2026) ? "Quick Possession" : "Resale",
+          openHouse: "Sat & Sun 1:00 PM - 4:00 PM",
+          distAberhartMin: comm.minTime + (i % 4),
+          distAberhart: `${comm.minTime + (i % 4)} mins (Express Bus/Car)`,
+          distDowntown: `${comm.minTime + 10} mins (CTrain/Drive)`,
+          builder: builders[i % builders.length],
+          walkout: hasWalkout ? "Yes" : "No",
+          openToBelow: hasBelow ? "Yes" : "No",
+          terrace: hasTerrace ? "Yes" : "No",
+          spacious: `${1600 + (i * 12)} sq ft`,
+          lat: comm.lat + ((Math.random() - 0.5) * 0.015),
+          lng: comm.lng + ((Math.random() - 0.5) * 0.015),
+          realtorUrl: realtorUrl,
+          remaxUrl: remaxUrl,
+          contactPhone: "403-263-0530"
         });
       }
-      return list;
+      return dataset;
     }
 
-    const propertiesData = generateProperties(100);
-
-    let currentFiltered = [];
-    let displayedCount = 18;
-    const PAGE_INCREMENT = 9;
-    let map = null;
-    let mapMarkerMap = {};
-
-    function realtimeRefresh() {
-      const btn = document.getElementById('refreshBtn');
-      btn.innerText = "🔄 Reloading...";
-      setTimeout(() => { window.location.reload(true); }, 300);
-    }
-
+    // Initialize Map Instance
     function initMap() {
-      map = L.map('mapContainer', { zoomControl: true }).setView([51.1350, -114.1700], 11);
+      map = L.map('map-pane').setView([51.1200, -114.1700], 11);
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap'
+        maxZoom: 18,
+        attribution: '&copy; OpenStreetMap contributors'
       }).addTo(map);
-
-      // School Pin
-      const schoolIcon = L.divIcon({
-        className: 'custom-leaflet-icon',
-        html: `<div class="school-pill">🏫 Wm. Aberhart High</div>`
-      });
-      L.marker([51.0770, -114.1290], { icon: schoolIcon }).addTo(map)
-        .bindPopup("<b>William Aberhart High School</b><br/>3009 24 Ave NW, Calgary");
     }
 
-    function updateMapMarkers(data) {
-      if (!map) return;
+    // Render Markers on Map
+    function updateMapMarkers(items) {
+      markersMap.forEach(marker => map.removeLayer(marker));
+      markersMap.clear();
 
-      // Clear existing markers
-      Object.values(mapMarkerMap).forEach(m => map.removeLayer(m));
-      mapMarkerMap = {};
-
-      data.forEach(item => {
-        const markerIcon = L.divIcon({
-          className: 'custom-leaflet-icon',
-          html: `<div class="realtor-price-pill" id="pill-${item.id}">${item.priceShort}</div>`
+      items.forEach(item => {
+        const customIcon = L.divIcon({
+          className: 'custom-pill-wrapper',
+          html: `<div class="price-pill-marker" id="pill-${item.id}">${item.priceShort}</div>`,
+          iconSize: [50, 24],
+          iconAnchor: [25, 12]
         });
 
-        const marker = L.marker([item.lat, item.lng], { icon: markerIcon }).addTo(map);
-        
+        const marker = L.marker([item.lat, item.lng], { icon: customIcon }).addTo(map);
+
         marker.on('click', () => {
           highlightCard(item.id);
+          const cardEl = document.getElementById(`card-${item.id}`);
+          if (cardEl) cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         });
 
-        marker.bindPopup(`
-          <div style="font-size:12px;">
-            <strong style="font-size:13px;color:#D32F2F;">${item.price}</strong><br/>
-            <strong>${item.address}</strong><br/>
-            ${item.community} | ${item.builder}<br/>
-            <button onclick="openRealtorListing('${item.id}')" style="margin-top:6px;background:#1A2530;color:white;border:none;padding:4px 8px;border-radius:3px;cursor:pointer;font-size:11px;">View Listing (#${item.id})</button>
-          </div>
-        `);
-
-        mapMarkerMap[item.id] = marker;
+        markersMap.set(item.id, marker);
       });
     }
 
-    function highlightCard(id) {
-      document.querySelectorAll('.card').forEach(c => c.classList.remove('highlighted'));
-      const cardEl = document.getElementById(`card-${id}`);
-      if (cardEl) {
-        cardEl.classList.add('highlighted');
-        cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    // Render Listings Grid
+    function renderGrid() {
+      const gridContainer = document.getElementById('cards-grid');
+      gridContainer.innerHTML = '';
+
+      const itemsToDisplay = filteredProperties.slice(0, displayedCount);
+      document.getElementById('results-count').innerText = `Showing ${itemsToDisplay.length} of ${filteredProperties.length} listings`;
+
+      itemsToDisplay.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'property-card';
+        card.id = `card-${item.id}`;
+        card.onmouseenter = () => highlightMarker(item.id, true);
+        card.onmouseleave = () => highlightMarker(item.id, false);
+
+        card.innerHTML = `
+          <div>
+            <div class="card-header">
+              <span class="card-price">${item.price}</span>
+              <span class="card-mls">MLS® ${item.id}</span>
+            </div>
+            <div class="card-address">${item.address}</div>
+            <div class="card-community">${item.community} • Built in ${item.yearBuilt}</div>
+
+            <div class="tag-list">
+              <span class="tag ${item.walkout === 'Yes' ? 'highlight' : ''}">Walkout: ${item.walkout}</span>
+              <span class="tag ${item.hasLegalSuite ? 'suite' : ''}">${item.hasLegalSuite ? 'Legal Suite' : 'No Suite'}</span>
+              <span class="tag ${item.openToBelow === 'Yes' ? 'highlight' : ''}">Open Below: ${item.openToBelow}</span>
+              <span class="tag">Terrace: ${item.terrace}</span>
+            </div>
+
+            <div class="specs-grid">
+              <div class="spec-item">Builder: <strong>${item.builder}</strong></div>
+              <div class="spec-item">Size: <strong>${item.spacious}</strong></div>
+              <div class="spec-item">Facing: <strong>${item.facing}</strong></div>
+              <div class="spec-item">Garage: <strong>${item.garage}</strong></div>
+              <div class="spec-item" style="grid-column: span 2">Main Bed/Bath: <strong>${item.mainBedBath}</strong></div>
+            </div>
+
+            <div class="commute-block">
+              <div>🏠 <strong>Open House:</strong> ${item.openHouse}</div>
+              <div>🎓 <strong>Aberhart High:</strong> ${item.distAberhart}</div>
+              <div>🏙️ <strong>Downtown:</strong> ${item.distDowntown}</div>
+            </div>
+
+            <div class="contact-line">
+              📞 Showing Contact: <a href="tel:${item.contactPhone}" style="color:#2b6cb0; text-decoration:underline;">${item.contactPhone}</a>
+            </div>
+          </div>
+
+          <div class="card-actions">
+            <a href="${item.realtorUrl}" target="_blank" rel="noopener noreferrer" class="btn-action btn-realtor">Realtor.ca ↗</a>
+            <a href="${item.remaxUrl}" target="_blank" rel="noopener noreferrer" class="btn-action btn-remax">RE/MAX Search ↗</a>
+          </div>
+        `;
+        gridContainer.appendChild(card);
+      });
+
+      const btnLoadMore = document.getElementById('btn-load-more');
+      if (displayedCount >= filteredProperties.length) {
+        btnLoadMore.style.display = 'none';
+      } else {
+        btnLoadMore.style.display = 'inline-block';
       }
+
+      updateMapMarkers(itemsToDisplay);
     }
 
-    function resetAndProcess() {
-      displayedCount = 18;
-      processProperties();
-    }
+    // Filter and Sort Engine
+    function applyFilters() {
+      const commFilter = document.getElementById('filter-community').value;
+      const facingFilter = document.getElementById('filter-facing').value;
+      const yearFilter = parseInt(document.getElementById('filter-year').value);
+      const sortFilter = document.getElementById('filter-sort').value;
 
-    function processProperties() {
-      const selectedCommunity = document.getElementById('communityFilter').value;
-      const selectedYear = document.getElementById('yearFilter').value;
-      const sortOrder = document.getElementById('sortOrder').value;
+      const chkWalkout = document.getElementById('chk-walkout').checked;
+      const chkSuite = document.getElementById('chk-suite').checked;
+      const chkBelow = document.getElementById('chk-below').checked;
+      const chkTerrace = document.getElementById('chk-terrace').checked;
 
-      // Checkboxes
-      const wantWalkout = document.getElementById('chkWalkout').checked;
-      const wantOpenBelow = document.getElementById('chkOpenBelow').checked;
-      const wantTerrace = document.getElementById('chkTerrace').checked;
-      const wantSuite = document.getElementById('chkSuite').checked;
-
-      currentFiltered = propertiesData.filter(p => {
-        if (selectedCommunity !== 'all' && !p.community.toLowerCase().includes(selectedCommunity.toLowerCase())) return false;
-        if (selectedYear !== 'all' && p.yearBuilt < parseInt(selectedYear)) return false;
-        if (wantWalkout && p.walkout !== 'Yes') return false;
-        if (wantOpenBelow && p.openToBelow !== 'Yes') return false;
-        if (wantTerrace && p.terrace !== 'Yes') return false;
-        if (wantSuite && !p.hasLegalSuite) return false;
+      filteredProperties = propertiesData.filter(item => {
+        if (commFilter !== 'ALL' && item.community !== commFilter) return false;
+        if (facingFilter !== 'ALL' && item.facing !== facingFilter) return false;
+        if (yearFilter > 0 && item.yearBuilt < yearFilter) return false;
+        if (chkWalkout && item.walkout !== 'Yes') return false;
+        if (chkSuite && !item.hasLegalSuite) return false;
+        if (chkBelow && item.openToBelow !== 'Yes') return false;
+        if (chkTerrace && item.terrace !== 'Yes') return false;
         return true;
       });
 
-      currentFiltered.sort((a, b) => {
-        if (sortOrder === 'price-asc') return a.priceNumeric - b.priceNumeric;
-        if (sortOrder === 'price-desc') return b.priceNumeric - a.priceNumeric;
-        if (sortOrder === 'dist-asc') return a.distAberhartMin - b.distAberhartMin;
-        if (sortOrder === 'year-desc') return b.yearBuilt - a.yearBuilt;
-        return 0;
-      });
-
-      document.getElementById('resultsCount').textContent = `Showing ${Math.min(displayedCount, currentFiltered.length)} of ${currentFiltered.length} properties`;
-      updateMapMarkers(currentFiltered);
-      renderProperties(currentFiltered.slice(0, displayedCount));
-
-      const loadMoreBtn = document.getElementById('loadMoreBtn');
-      if (displayedCount >= currentFiltered.length) {
-        loadMoreBtn.style.display = 'none';
-      } else {
-        loadMoreBtn.style.display = 'inline-block';
-        loadMoreBtn.innerText = `Load More Listings (+${Math.min(PAGE_INCREMENT, currentFiltered.length - displayedCount)})`;
+      if (sortFilter === 'price-asc') {
+        filteredProperties.sort((a, b) => a.priceNumeric - b.priceNumeric);
+      } else if (sortFilter === 'price-desc') {
+        filteredProperties.sort((a, b) => b.priceNumeric - a.priceNumeric);
+      } else if (sortFilter === 'transit-asc') {
+        filteredProperties.sort((a, b) => a.distAberhartMin - b.distAberhartMin);
+      } else if (sortFilter === 'year-desc') {
+        filteredProperties.sort((a, b) => b.yearBuilt - a.yearBuilt);
       }
+
+      displayedCount = 18;
+      renderGrid();
     }
 
     function loadMore() {
       displayedCount += PAGE_INCREMENT;
-      processProperties();
+      renderGrid();
     }
 
-    function openRealtorListing(mlsId) {
-      window.open(`https://www.realtor.ca/real-estate-search?m=${encodeURIComponent(mlsId)}`, '_blank');
-    }
-
-    function renderProperties(data) {
-      const grid = document.getElementById('propertyGrid');
-      grid.innerHTML = '';
-
-      if (data.length === 0) {
-        grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text-muted);">No properties match your selected criteria.</p>';
-        return;
+    function highlightMarker(id, enable) {
+      const pill = document.getElementById(`pill-${id}`);
+      if (pill) {
+        if (enable) pill.classList.add('active-pill');
+        else pill.classList.remove('active-pill');
       }
-
-      data.forEach(item => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.id = `card-${item.id}`;
-        
-        // Sync hover with Map Marker Pill
-        card.onmouseenter = () => {
-          const pill = document.getElementById(`pill-${item.id}`);
-          if (pill) pill.classList.add('active');
-        };
-        card.onmouseleave = () => {
-          const pill = document.getElementById(`pill-${item.id}`);
-          if (pill) pill.classList.remove('active');
-        };
-
-        card.innerHTML = `
-          <div class="card-header">
-            <div class="price-row">
-              <span class="price">${item.price}</span>
-              <span class="builder-tag">${item.builder}</span>
-            </div>
-            <div class="address">${item.address}</div>
-            <div class="community">Calgary NW — ${item.community}</div>
-          </div>
-          <div class="card-body">
-            <div class="badge-container">
-              <span class="badge badge-open-house">${item.openHouse}</span>
-              <span class="badge badge-suite">${item.suiteStatus}</span>
-            </div>
-            <ul class="specs">
-              <li>Orientation: <span>${item.facing} Facing</span></li>
-              <li>Year Built: <span>${item.yearBuilt}</span></li>
-              <li>Garage: <span>${item.garage}</span></li>
-              <li>Main Floor Bed/Bath: <span>${item.mainBedBath}</span></li>
-              <li>Walk-Out Basement: <span class="${item.walkout === 'Yes' ? 'highlight-spec' : ''}">${item.walkout}</span></li>
-              <li>Open to Below: <span class="${item.openToBelow === 'Yes' ? 'highlight-spec' : ''}">${item.openToBelow}</span></li>
-              <li>3rd Floor Terrace: <span class="${item.terrace === 'Yes' ? 'highlight-spec' : ''}">${item.terrace}</span></li>
-              <li>Floor Area: <span>${item.spacious}</span></li>
-            </ul>
-            <div class="distances">
-              <strong>Transit & Distance:</strong><br/>
-              • Wm. Aberhart High: ${item.distAberhart}<br/>
-              • Downtown Calgary: ${item.distDowntown}
-            </div>
-          </div>
-          <div class="card-footer">
-            <button onclick="openRealtorListing('${item.id}')" class="btn">View MLS Listing (#${item.id})</button>
-          </div>
-        `;
-        grid.appendChild(card);
-      });
     }
 
-    window.onload = function() {
+    function highlightCard(id) {
+      document.querySelectorAll('.property-card').forEach(c => c.classList.remove('highlighted'));
+      const card = document.getElementById(`card-${id}`);
+      if (card) card.classList.add('highlighted');
+    }
+
+    window.onload = () => {
       initMap();
-      processProperties();
+      propertiesData = generateProperties();
+      applyFilters();
     };
   </script>
 </body>
