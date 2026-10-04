@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NW Calgary Home Finder | Near William Aberhart High</title>
+  <style>
+    :root {
+      --primary: #1E3A8A;
+      --secondary: #0D9488;
+      --bg: #F8FAFC;
+      --card-bg: #FFFFFF;
+      --text: #1F2937;
+      --text-muted: #6B7280;
+      --border: #E5E7EB;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); line-height: 1.5; padding: 20px; }
+
+    header {
+      max-width: 1200px;
+      margin: 0 auto 30px auto;
+      text-align: center;
+      padding: 30px 20px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    header h1 { font-size: 2.2rem; margin-bottom: 8px; }
+    header p { font-size: 1.1rem; opacity: 0.9; }
+
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    .filter-bar {
+      background: var(--card-bg);
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 25px;
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+    .filter-bar label { font-weight: 600; font-size: 0.9rem; }
+    .filter-bar select {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      outline: none;
+    }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 24px; }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+
+    .card-header { padding: 20px 20px 10px 20px; border-bottom: 1px solid var(--border); }
+    .price { font-size: 1.6rem; font-weight: 700; color: var(--primary); }
+    .address { font-size: 1.1rem; font-weight: 600; margin-top: 4px; }
+    .community { color: var(--text-muted); font-size: 0.9rem; }
+
+    .card-body { padding: 20px; flex-grow: 1; }
+
+    .badge-container { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 15px; }
+    .badge {
+      background: #E0F2FE;
+      color: #0369A1;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+    .badge.open-house { background: #DCFCE7; color: #15803D; }
+    .badge.legal-suite { background: #FEF3C7; color: #B45309; }
+
+    .specs { list-style: none; margin-bottom: 15px; font-size: 0.95rem; }
+    .specs li { margin-bottom: 6px; display: flex; justify-content: space-between; }
+    .specs li span { font-weight: 600; }
+
+    .distances {
+      background: #F3F4F6;
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      margin-bottom: 15px;
+    }
+
+    .card-footer { padding: 15px 20px; background: #FAF5FF; border-top: 1px solid var(--border); }
+    .btn {
+      display: block;
+      width: 100%;
+      text-align: center;
+      background: var(--primary);
+      color: white;
+      padding: 10px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #1D4ED8; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>NW Calgary Property Showcase</h1>
+    <p>Filtered Single-Detached Homes near William Aberhart High School</p>
+  </header>
+
+  <div class="container">
+    <div class="filter-bar">
+      <label for="communityFilter">Filter by Community:</label>
+      <select id="communityFilter" onchange="filterProperties()">
+        <option value="all">All Communities</option>
+        <option value="Nolan Hill">Nolan Hill</option>
+        <option value="Carrington">Carrington</option>
+        <option value="Rockland Park">Rockland Park</option>
+      </select>
+    </div>
+
+    <div class="grid" id="propertyGrid"></div>
+  </div>
+
+  <script>
+    const properties = [
+      {
+        id: "A2349850",
+        address: "296 Nolancrest Heights NW",
+        community: "Nolan Hill",
+        price: "$850,000",
+        facing: "East",
+        garage: "Double Attached",
+        mainBedBath: "Yes (1 Bed + Full Bath)",
+        suite: "Legal Basement Suite",
+        status: "Quick Possession",
+        openHouse: "Sat & Sun 1:30 PM - 4:00 PM",
+        distAberhart: "14 km (22 min drive / Bus 82)",
+        distDowntown: "18 km (25 min drive)",
+        builder: "Shane Homes",
+        features: ["Spacious Open-to-Below", "Walk-out Basement"],
+        mlsUrl: "https://www.realtor.ca"
+      },
+      {
+        id: "A2349912",
+        address: "184 Rowmont Boulevard NW",
+        community: "Rockland Park",
+        price: "$730,000",
+        facing: "East",
+        garage: "Double Attached",
+        mainBedBath: "Yes (1 Bed + Full Bath)",
+        suite: "Legal Suite Approved / Ready",
+        status: "Newly Built (2025/2026)",
+        openHouse: "Sat & Sun 12:00 PM - 3:00 PM",
+        distAberhart: "10 km (16 min drive / Route 134)",
+        distDowntown: "14 km (20 min drive)",
+        builder: "Morrison Homes",
+        features: ["Walk-out Basement", "Terrace Option"],
+        mlsUrl: "https://www.realtor.ca"
+      },
+      {
+        id: "A2348043",
+        address: "87 Carrington Drive NW",
+        community: "Carrington",
+        price: "$888,000",
+        facing: "East",
+        garage: "Double Attached",
+        mainBedBath: "Yes (Main Floor Bedroom & 4pc Bath)",
+        suite: "Legal Basement Suite",
+        status: "Under Construction (Quick Poss.)",
+        openHouse: "Next Weekend Sat 2:00 PM - 4:00 PM",
+        distAberhart: "15 km (24 min drive / Express Transit)",
+        distDowntown: "19 km (26 min drive)",
+        builder: "Mattamy Homes",
+        features: ["Open to Below Ceiling", "Walk-out Lower Level"],
+        mlsUrl: "https://www.realtor.ca"
+      }
+    ];
+
+    function renderProperties(data) {
+      const grid = document.getElementById('propertyGrid');
+      grid.innerHTML = '';
+      
+      data.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="card-header">
+            <div class="price">${item.price}</div>
+            <div class="address">${item.address}</div>
+            <div class="community">Calgary NW — ${item.community}</div>
+          </div>
+          <div class="card-body">
+            <div class="badge-container">
+              <span class="badge open-house">Open House: ${item.openHouse}</span>
+              <span class="badge legal-suite">${item.suite}</span>
+              <span class="badge">${item.status}</span>
+            </div>
+            <ul class="specs">
+              <li><span>Facing:</span> ${item.facing}</li>
+              <li><span>Garage:</span> ${item.garage}</li>
+              <li><span>Main Floor Bed/Bath:</span> ${item.mainBedBath}</li>
+              <li><span>Builder:</span> ${item.builder}</li>
+              <li><span>Highlights:</span> ${item.features.join(', ')}</li>
+            </ul>
+            <div class="distances">
+              <strong>Transit & Location Distances:</strong><br/>
+              • <strong>Wm. Aberhart High:</strong> ${item.distAberhart}<br/>
+              • <strong>Downtown Calgary:</strong> ${item.distDowntown}
+            </div>
+          </div>
+          <div class="card-footer">
+            <a href="${item.mlsUrl}" target="_blank" class="btn">View Listing (MLS® #${item.id})</a>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function filterProperties() {
+      const selected = document.getElementById('communityFilter').value;
+      if (selected === 'all') {
+        renderProperties(properties);
+      } else {
+        renderProperties(properties.filter(p => p.community === selected));
+      }
+    }
+
+    // Initial render
+    renderProperties(properties);
+  </script>
+</body>
+</html>
