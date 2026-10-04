@@ -3,443 +3,221 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NW Calgary Active Single-Detached Homes (Live MLS Data)</title>
-
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-
+  <title>NW Calgary Property Tracker — William Aberhart High Catchment</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; width: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f8; color: #2c3e50; overflow: hidden; }
-
-    header { height: 60px; background-color: #1a252f; color: #ffffff; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1000; position: relative; }
-    header h1 { font-size: 1.1rem; font-weight: 600; }
-    header .header-status { font-size: 0.8rem; color: #27ae60; background: #111827; padding: 4px 10px; border-radius: 12px; border: 1px solid #27ae60; font-weight: 600; }
-
-    .filter-bar { background-color: #ffffff; padding: 10px 20px; border-bottom: 1px solid #e2e8f0; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; z-index: 999; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-    .filter-group { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 500; }
-    .filter-group label { color: #4a5568; }
-    .filter-group select { padding: 6px 10px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 0.85rem; background-color: #fff; }
-
-    .app-container { display: flex; height: calc(100vh - 105px); width: 100vw; overflow: hidden; }
-
-    #map-pane { flex: 1 1 50%; height: 100%; z-index: 1; }
-
-    .price-pill-marker { background: #2c3e50; color: #ffffff; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; border: 2px solid #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); white-space: nowrap; transition: all 0.2s ease-in-out; text-align: center; }
-    .price-pill-marker.active-pill { background: #e74c3c; transform: scale(1.15); z-index: 1000 !important; border-color: #ffffff; }
-
-    #listings-pane { flex: 1 1 50%; height: 100%; overflow-y: auto; padding: 15px; background-color: #edf2f7; display: flex; flex-direction: column; }
-    .results-info { font-size: 0.85rem; color: #718096; margin-bottom: 12px; font-weight: 500; display: flex; justify-content: space-between; }
-
-    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 15px; }
-
-    .property-card { background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; position: relative; }
-    .property-card:hover, .property-card.highlighted { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); border-color: #3182ce; }
-    .property-card.highlighted { border: 2px solid #e74c3c; }
-
-    .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
-    .card-price { font-size: 1.25rem; font-weight: 800; color: #2b6cb0; }
-    .card-mls { font-size: 0.75rem; color: #e53e3e; font-weight: 700; background: #fff5f5; padding: 2px 6px; border-radius: 4px; border: 1px solid #fed7d7; }
-    .card-address { font-size: 0.9rem; font-weight: 700; color: #2d3748; margin-bottom: 2px; }
-    .card-community { font-size: 0.8rem; color: #718096; font-weight: 500; margin-bottom: 10px; }
-
-    .specs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.75rem; background: #f7fafc; padding: 8px; border-radius: 6px; margin-bottom: 10px; border: 1px solid #edf2f7; }
-    .spec-item { color: #4a5568; }
-    .spec-item strong { color: #1a202c; }
-
-    .commute-block { font-size: 0.72rem; color: #4a5568; border-top: 1px border-dashed #e2e8f0; padding-top: 6px; margin-bottom: 10px; }
-
-    .source-line { font-size: 0.72rem; color: #4a5568; background: #ebf8ff; padding: 6px 8px; border-radius: 4px; margin-bottom: 10px; border: 1px solid #bee3f8; }
-    .source-line a { color: #2b6cb0; text-decoration: underline; font-weight: 700; word-break: break-all; }
-
-    .card-actions { display: flex; gap: 6px; margin-top: auto; }
-    .btn-action { flex: 1; text-align: center; text-decoration: none; padding: 8px 4px; font-size: 0.75rem; font-weight: 700; border-radius: 4px; color: #ffffff; transition: background 0.2s; }
-    .btn-realtor { background-color: #d32f2f; }
-    .btn-realtor:hover { background-color: #b71c1c; }
-    .btn-finder { background-color: #2b6cb0; }
-    .btn-finder:hover { background-color: #2c5282; }
-
-    @media (max-width: 900px) {
-      .app-container { flex-direction: column; height: auto; }
-      #map-pane { height: 350px; flex: none; }
-      #listings-pane { height: auto; flex: none; }
+    :root {
+      --primary: #1e3a8a;
+      --accent: #2563eb;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --border: #e2e8f0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 24px;
+    }
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    header {
+      margin-bottom: 24px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 16px;
+    }
+    h1 {
+      color: var(--primary);
+      margin: 0 0 8px 0;
+      font-size: 26px;
+    }
+    p.subtitle {
+      color: #64748b;
+      margin: 0 0 12px 0;
+      font-size: 14px;
+    }
+    .sources-bar {
+      background-color: #e0e7ff;
+      border: 1px solid #c7d2fe;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #1e40af;
+      margin-bottom: 20px;
+    }
+    .sources-bar strong {
+      color: #1e3a8a;
+    }
+    .table-container {
+      overflow-x: auto;
+      background: var(--card-bg);
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      border: 1px solid var(--border);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    th, td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      vertical-align: top;
+    }
+    th {
+      background-color: #f1f5f9;
+      color: var(--primary);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    tr:hover {
+      background-color: #f8fafc;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 7px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      background-color: #dbeafe;
+      color: #1e40af;
+      margin-bottom: 4px;
+    }
+    .badge-walkout {
+      background-color: #dcfce7;
+      color: #166534;
+    }
+    .price {
+      font-weight: 700;
+      color: #0f172a;
+      font-size: 15px;
+      white-space: nowrap;
+    }
+    a.link-btn {
+      display: inline-block;
+      color: #ffffff;
+      background-color: var(--accent);
+      padding: 6px 12px;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 12px;
+    }
+    a.link-btn:hover {
+      background-color: var(--primary);
     }
   </style>
 </head>
 <body>
-
-  <header>
-    <h1>NW Calgary Active Single-Detached Homes (Verified MLS® Listings)</h1>
-    <span class="header-status">● Live CREB® Active MLS® Data</span>
-  </header>
-
-  <div class="filter-bar">
-    <div class="filter-group">
-      <label for="filter-community">Community:</label>
-      <select id="filter-community" onchange="applyFilters()">
-        <option value="ALL">All NW Communities</option>
-        <option value="Arbour Lake">Arbour Lake</option>
-        <option value="Bowness">Bowness</option>
-        <option value="Brentwood">Brentwood</option>
-        <option value="Citadel">Citadel</option>
-        <option value="Edgemont">Edgemont</option>
-        <option value="Hawkwood">Hawkwood</option>
-        <option value="Ranchlands">Ranchlands</option>
-        <option value="Royal Oak">Royal Oak</option>
-        <option value="Sandstone Valley">Sandstone Valley</option>
-        <option value="Silver Springs">Silver Springs</option>
-        <option value="Tuscany">Tuscany</option>
-        <option value="Varsity">Varsity</option>
-      </select>
-    </div>
-
-    <div class="filter-group">
-      <label for="filter-sort">Sort By:</label>
-      <select id="filter-sort" onchange="applyFilters()">
-        <option value="price-asc">Price: Low to High</option>
-        <option value="price-desc">Price: High to Low</option>
-        <option value="sqft-desc">Size: Largest First</option>
-      </select>
-    </div>
-  </div>
-
-  <div class="app-container">
-    <div id="map-pane"></div>
-
-    <div id="listings-pane">
-      <div class="results-info">
-        <span id="results-count">Showing verified active listings</span>
-        <span>Target High School: William Aberhart</span>
+  <div class="container">
+    <header>
+      <h1>NW Calgary Single-Detached Property Tracker</h1>
+      <p class="subtitle">Criteria: Single-Detached Under $1,000,000 | Double Garage | Aberhart High Transit Corridor | Walkout / Suite Potential</p>
+      <div class="sources-bar">
+        <strong>Scanned Platforms:</strong> REALTOR.ca, Zolo Calgary, Redfin Canada, Zillow, Calgary House Finder, Justin Havre & Associates, Real-Estate.ca, CIR Realty, RE/MAX, Calgary Listings.
       </div>
+    </header>
 
-      <div id="cards-grid" class="cards-grid"></div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>MLS® #</th>
+            <th>Address & Community</th>
+            <th>Price</th>
+            <th>Beds / Baths / Sq Ft</th>
+            <th>Key Features & Layout Highlights</th>
+            <th>William Aberhart Transit Commute</th>
+            <th>Verified Source</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>A2348026</code></td>
+            <td><strong>117 Hawkbury Close NW</strong><br>Hawkwood</td>
+            <td class="price">$874,900</td>
+            <td>5 Bed / 4 Bath<br>2,383 sq ft</td>
+            <td>
+              <span class="badge badge-walkout">Finished Basement</span>
+              <span class="badge">Double Garage</span><br>
+              Spacious 2-storey layout, updated kitchen, high vaulted ceilings, large private backyard.
+            </td>
+            <td>Route 76 Express Bus to Crowfoot CTrain Station (Direct Red Line to Banff Trail Station).</td>
+            <td><a class="link-btn" href="https://www.zolo.ca/calgary-real-estate/117-hawkbury-close-north-west" target="_blank" rel="noopener">View on Zolo</a></td>
+          </tr>
+          <tr>
+            <td><code>A2337818</code></td>
+            <td><strong>153 Hawkdale Circle NW</strong><br>Hawkwood</td>
+            <td class="price">$829,900</td>
+            <td>5 Bed / 4 Bath<br>2,117 sq ft</td>
+            <td>
+              <span class="badge badge-walkout">2-Storey Walkout</span>
+              <span class="badge">Poly-B Replaced</span><br>
+              Basement suite potential with appliances included, double attached garage, mountain views.
+            </td>
+            <td>Route 76 / Express Bus connection to Crowfoot CTrain Station.</td>
+            <td><a class="link-btn" href="https://www.zolo.ca/calgary-real-estate/153-hawkdale-circle-north-west" target="_blank" rel="noopener">View on Zolo</a></td>
+          </tr>
+          <tr>
+            <td><code>A2349480</code></td>
+            <td><strong>118 Citadel Crest Park NW</strong><br>Citadel</td>
+            <td class="price">$719,900</td>
+            <td>4 Bed / 4 Bath<br>1,948 sq ft</td>
+            <td>
+              <span class="badge">Vaulted Ceilings</span>
+              <span class="badge">Double Attached Garage</span><br>
+              Open main floor, fully finished basement with wet bar, Poly-B replaced in 2026.
+            </td>
+            <td>Express Bus 138 directly to Crowfoot CTrain Station (Banff Trail Connection).</td>
+            <td><a class="link-btn" href="https://www.calgaryhousefinder.ca/listing/a2349480-118-citadel-crest-park-nw-calgary-alberta-t3g-4k5/" target="_blank" rel="noopener">View Listing</a></td>
+          </tr>
+          <tr>
+            <td><code>A2335522</code></td>
+            <td><strong>65 Tuscarora Place NW</strong><br>Tuscany</td>
+            <td class="price">$679,900</td>
+            <td>3 Bed / 4 Bath<br>1,435 sq ft</td>
+            <td>
+              <span class="badge badge-walkout">Full Walkout Basement</span>
+              <span class="badge">Separate Entry</span><br>
+              Basement wet bar, mountain views, quiet cul-de-sac location, double attached garage.
+            </td>
+            <td>Direct CTrain from Tuscany Station to Banff Trail Station (5-min walk to Aberhart).</td>
+            <td><a class="link-btn" href="https://calgaryhomes.ca/listing/a2335522-65-tuscarora-place-northwest-calgary-alberta-t3l2g1/" target="_blank" rel="noopener">View Listing</a></td>
+          </tr>
+          <tr>
+            <td><code>A2168910</code></td>
+            <td><strong>11 Arbour Summit Close NW</strong><br>Arbour Lake</td>
+            <td class="price">$674,900</td>
+            <td>5 Bed / 4 Bath<br>1,803 sq ft</td>
+            <td>
+              <span class="badge">Lake Access</span>
+              <span class="badge">Double Attached Garage</span><br>
+              5 full bedrooms, fully finished basement, upgraded flooring, fully landscaped lot.
+            </td>
+            <td>Direct walk or feeder bus to Crowfoot CTrain Station.</td>
+            <td><a class="link-btn" href="https://www.calgaryhousefinder.ca/listing/a2168910-11-arbour-summit-close-nw-calgary-alberta-t3g-3w1/" target="_blank" rel="noopener">View Listing</a></td>
+          </tr>
+          <tr>
+            <td><code>A2344733</code></td>
+            <td><strong>112 Sherwood Crescent NW</strong><br>Sherwood</td>
+            <td class="price">$899,900</td>
+            <td>4 Bed / 4 Bath<br>2,435 sq ft</td>
+            <td>
+              <span class="badge badge-walkout">Full Walkout Basement</span>
+              <span class="badge">East-Facing Exposure</span><br>
+              18ft ceiling foyer, wet bar, backing onto green space, double attached garage.
+            </td>
+            <td>Express Bus Route 129 / 82 connecting to Red Line CTrain.</td>
+            <td><a class="link-btn" href="https://calgaryhomes.ca/listing/a2344733-112-sherwood-crescent-northwest-calgary-alberta-t3r-0g2/" target="_blank" rel="noopener">View Listing</a></td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
-
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
-
-  <script>
-    // Real, active Single-Detached listings in NW Calgary extracted directly from current MLS® records
-    const realMLSData = [
-      {
-        mlsId: "A2348368",
-        address: "337 Sandringham Court NW",
-        community: "Sandstone Valley",
-        priceNumeric: 800000,
-        price: "$800,000",
-        priceShort: "$800k",
-        beds: 5,
-        baths: 4,
-        sqft: 2018,
-        brokerage: "eXp Realty",
-        lat: 51.1340,
-        lng: -114.1205,
-        finderUrl: "https://www.calgaryhousefinder.ca/listing/a2348368-337-sandringham-court-nw-calgary-alberta-t3k-3v6/",
-        realtorUrl: "https://www.realtor.ca/real-estate/26348368/337-sandringham-court-nw-calgary-sandstone-valley"
-      },
-      {
-        mlsId: "A2349606",
-        address: "1152 Ranchlands Boulevard NW",
-        community: "Ranchlands",
-        priceNumeric: 575000,
-        price: "$575,000",
-        priceShort: "$575k",
-        beds: 5,
-        baths: 2,
-        sqft: 1420,
-        brokerage: "RE/MAX Realty Professionals",
-        lat: 51.1165,
-        lng: -114.1755,
-        finderUrl: "https://www.calgaryhousefinder.ca/listing/a2349606-1152-ranchlands-boulevard-nw-calgary-alberta-t3g-1g5/",
-        realtorUrl: "https://www.realtor.ca/real-estate/26349606/1152-ranchlands-boulevard-nw-calgary-ranchlands"
-      },
-      {
-        mlsId: "A2349059",
-        address: "236 Edgebrook Gardens NW",
-        community: "Edgemont",
-        priceNumeric: 736888,
-        price: "$736,888",
-        priceShort: "$737k",
-        beds: 3,
-        baths: 4,
-        sqft: 1322,
-        brokerage: "RE/MAX Innovations",
-        lat: 51.1290,
-        lng: -114.1480,
-        finderUrl: "https://www.calgaryhousefinder.ca/listing/a2349059-236-edgebrook-gardens-nw-calgary-alberta-t3a-4z9/",
-        realtorUrl: "https://www.realtor.ca/real-estate/26349059/236-edgebrook-gardens-nw-calgary-edgemont"
-      },
-      {
-        mlsId: "A2349480",
-        address: "118 Citadel Crest Park NW",
-        community: "Citadel",
-        priceNumeric: 719900,
-        price: "$719,900",
-        priceShort: "$720k",
-        beds: 4,
-        baths: 4,
-        sqft: 1948,
-        brokerage: "RE/MAX Realty Professionals",
-        lat: 51.1435,
-        lng: -114.1870,
-        finderUrl: "https://www.calgaryhousefinder.ca/listing/a2349480-118-citadel-crest-park-nw-calgary-alberta-t3g-4k5/",
-        realtorUrl: "https://www.realtor.ca/real-estate/26349480/118-citadel-crest-park-nw-calgary-citadel"
-      },
-      {
-        mlsId: "A2164391",
-        address: "80 Edforth Way NW",
-        community: "Edgemont",
-        priceNumeric: 745000,
-        price: "$745,000",
-        priceShort: "$745k",
-        beds: 5,
-        baths: 3,
-        sqft: 1585,
-        brokerage: "RE/MAX Real Estate (Mountain View)",
-        lat: 51.1245,
-        lng: -114.1520,
-        finderUrl: "https://www.calgaryhousefinder.ca/listing/a2164391-80-edforth-way-nw-calgary-alberta-t3a-3w2/",
-        realtorUrl: "https://www.realtor.ca/real-estate/26164391/80-edforth-way-nw-calgary-edgemont"
-      },
-      {
-        mlsId: "A2165218",
-        address: "8516 Hawkford Gate NW",
-        community: "Hawkwood",
-        priceNumeric: 749900,
-        price: "$749,900",
-        priceShort: "$750k",
-        beds: 3,
-        baths: 3,
-        sqft: 2097,
-        brokerage: "Royal LePage Benchmark",
-        lat: 51.1230,
-        lng: -114.1810,
-        finderUrl: "https://www.calgaryhousefinder.ca/listing/a2165218-8516-hawkford-gate-nw-calgary-alberta-t3g-2y4/",
-        realtorUrl: "https://www.realtor.ca/real-estate/26165218/8516-hawkford-gate-nw-calgary-hawkwood"
-      },
-      {
-        mlsId: "A2161204",
-        address: "113 Tusslewood Bay NW",
-        community: "Tuscany",
-        priceNumeric: 1025000,
-        price: "$1,025,000",
-        priceShort: "$1.02M",
-        beds: 5,
-        baths: 4,
-        sqft: 2400,
-        brokerage: "Real Broker",
-        lat: 51.1275,
-        lng: -114.2390,
-        finderUrl: "https://www.calgaryhousefinder.ca/listing/a2161204-113-tusslewood-bay-nw-calgary-alberta-t3l-2y3/",
-        realtorUrl: "https://www.realtor.ca/real-estate/26161204/113-tusslewood-bay-nw-calgary-tuscany"
-      },
-      {
-        mlsId: "A2168910",
-        address: "11 Arbour Summit Close NW",
-        community: "Arbour Lake",
-        priceNumeric: 674900,
-        price: "$674,900",
-        priceShort: "$675k",
-        beds: 5,
-        baths: 4,
-        sqft: 1803,
-        brokerage: "Century 21 Bravo Realty",
-        lat: 51.1295,
-        lng: -114.2090,
-        finderUrl: "https://www.calgaryhousefinder.ca/listing/a2168910-11-arbour-summit-close-nw-calgary-alberta-t3g-3w1/",
-        realtorUrl: "https://www.realtor.ca/real-estate/26168910/11-arbour-summit-close-nw-calgary-arbour-lake"
-      },
-      {
-        mlsId: "A2167102",
-        address: "160 Royal Oak Heights NW",
-        community: "Royal Oak",
-        priceNumeric: 779000,
-        price: "$779,000",
-        priceShort: "$779k",
-        beds: 4,
-        baths: 4,
-        sqft: 2295,
-        brokerage: "Royal LePage Benchmark",
-        lat: 51.1520,
-        lng: -114.2110,
-        finderUrl: "https://www.calgaryhousefinder.ca/listing/a2167102-160-royal-oak-heights-nw-calgary-alberta-t3g-5v3/",
-        realtorUrl: "https://www.realtor.ca/real-estate/26167102/160-royal-oak-heights-nw-calgary-royal-oak"
-      },
-      {
-        mlsId: "A2163012",
-        address: "4831 48 St NW",
-        community: "Varsity",
-        priceNumeric: 660000,
-        price: "$660,000",
-        priceShort: "$660k",
-        beds: 5,
-        baths: 3,
-        sqft: 1059,
-        brokerage: "The Real Estate District",
-        lat: 51.0960,
-        lng: -114.1525,
-        finderUrl: "https://www.calgaryhousefinder.ca/listing/a2163012-4831-48-st-nw-calgary-alberta-t3a-0s5/",
-        realtorUrl: "https://www.realtor.ca/real-estate/26163012/4831-48-st-nw-calgary-varsity"
-      },
-      {
-        mlsId: "A2169004",
-        address: "4116 Brisebois Dr NW",
-        community: "Brentwood",
-        priceNumeric: 839000,
-        price: "$839,000",
-        priceShort: "$839k",
-        beds: 5,
-        baths: 3,
-        sqft: 1107,
-        brokerage: "eXp Realty",
-        lat: 51.0890,
-        lng: -114.1290,
-        finderUrl: "https://www.calgaryhousefinder.ca/listing/a2169004-4116-brisebois-dr-nw-calgary-alberta-t2l-2e7/",
-        realtorUrl: "https://www.realtor.ca/real-estate/26169004/4116-brisebois-dr-nw-calgary-brentwood"
-      },
-      {
-        mlsId: "A2348025",
-        address: "169 Silver Mead Crescent NW",
-        community: "Silver Springs",
-        priceNumeric: 900000,
-        price: "$900,000",
-        priceShort: "$900k",
-        beds: 4,
-        baths: 2,
-        sqft: 1437,
-        brokerage: "eXp Realty",
-        lat: 51.1060,
-        lng: -114.1950,
-        finderUrl: "https://www.calgaryhousefinder.ca/listing/a2348025-169-silver-mead-crescent-nw-calgary-alberta-t3b-3k3/",
-        realtorUrl: "https://www.realtor.ca/real-estate/26348025/169-silver-mead-crescent-nw-calgary-silver-springs"
-      }
-    ];
-
-    let filteredProperties = [];
-    let map;
-    let markersMap = new Map();
-
-    function initMap() {
-      map = L.map('map-pane').setView([51.1150, -114.1650], 11);
-
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 18,
-        attribution: '&copy; OpenStreetMap contributors | CREB® MLS®'
-      }).addTo(map);
-    }
-
-    function updateMapMarkers(items) {
-      markersMap.forEach(marker => map.removeLayer(marker));
-      markersMap.clear();
-
-      items.forEach(item => {
-        const customIcon = L.divIcon({
-          className: 'custom-pill-wrapper',
-          html: `<div class="price-pill-marker" id="pill-${item.mlsId}">${item.priceShort}</div>`,
-          iconSize: [50, 24],
-          iconAnchor: [25, 12]
-        });
-
-        const marker = L.marker([item.lat, item.lng], { icon: customIcon }).addTo(map);
-
-        marker.on('click', () => {
-          highlightCard(item.mlsId);
-          const cardEl = document.getElementById(`card-${item.mlsId}`);
-          if (cardEl) cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        });
-
-        markersMap.set(item.mlsId, marker);
-      });
-    }
-
-    function renderGrid() {
-      const gridContainer = document.getElementById('cards-grid');
-      gridContainer.innerHTML = '';
-
-      document.getElementById('results-count').innerText = `Showing ${filteredProperties.length} active listings`;
-
-      filteredProperties.forEach(item => {
-        const card = document.createElement('div');
-        card.className = 'property-card';
-        card.id = `card-${item.mlsId}`;
-        card.onmouseenter = () => highlightMarker(item.mlsId, true);
-        card.onmouseleave = () => highlightMarker(item.mlsId, false);
-
-        card.innerHTML = `
-          <div>
-            <div class="card-header">
-              <span class="card-price">${item.price}</span>
-              <span class="card-mls">MLS® ${item.mlsId}</span>
-            </div>
-            <div class="card-address">${item.address}</div>
-            <div class="card-community">${item.community} • Calgary, AB</div>
-
-            <div class="specs-grid">
-              <div class="spec-item">Bedrooms: <strong>${item.beds} Beds</strong></div>
-              <div class="spec-item">Bathrooms: <strong>${item.baths} Baths</strong></div>
-              <div class="spec-item">Living Area: <strong>${item.sqft} sq ft</strong></div>
-              <div class="spec-item">Brokerage: <strong>${item.brokerage}</strong></div>
-            </div>
-
-            <div class="commute-block">
-              <div>🎓 <strong>William Aberhart High:</strong> Public Transit / School Bus Direct Zone</div>
-            </div>
-
-            <div class="source-line">
-              🔗 <strong>Source Reference:</strong><br>
-              <a href="${item.finderUrl}" target="_blank" rel="noopener noreferrer">${item.finderUrl} ↗</a>
-            </div>
-          </div>
-
-          <div class="card-actions">
-            <a href="${item.finderUrl}" target="_blank" rel="noopener noreferrer" class="btn-action btn-finder">Calgary House Finder ↗</a>
-            <a href="${item.realtorUrl}" target="_blank" rel="noopener noreferrer" class="btn-action btn-realtor">Realtor.ca ↗</a>
-          </div>
-        `;
-        gridContainer.appendChild(card);
-      });
-
-      updateMapMarkers(filteredProperties);
-    }
-
-    function applyFilters() {
-      const commFilter = document.getElementById('filter-community').value;
-      const sortFilter = document.getElementById('filter-sort').value;
-
-      filteredProperties = realMLSData.filter(item => {
-        if (commFilter !== 'ALL' && item.community !== commFilter) return false;
-        return true;
-      });
-
-      if (sortFilter === 'price-asc') {
-        filteredProperties.sort((a, b) => a.priceNumeric - b.priceNumeric);
-      } else if (sortFilter === 'price-desc') {
-        filteredProperties.sort((a, b) => b.priceNumeric - a.priceNumeric);
-      } else if (sortFilter === 'sqft-desc') {
-        filteredProperties.sort((a, b) => b.sqft - a.sqft);
-      }
-
-      renderGrid();
-    }
-
-    function highlightMarker(id, enable) {
-      const pill = document.getElementById(`pill-${id}`);
-      if (pill) {
-        if (enable) pill.classList.add('active-pill');
-        else pill.classList.remove('active-pill');
-      }
-    }
-
-    function highlightCard(id) {
-      document.querySelectorAll('.property-card').forEach(c => c.classList.remove('highlighted'));
-      const card = document.getElementById(`card-${id}`);
-      if (card) card.classList.add('highlighted');
-    }
-
-    window.onload = () => {
-      initMap();
-      applyFilters();
-    };
-  </script>
 </body>
 </html>
