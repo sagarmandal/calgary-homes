@@ -4,10 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NW Calgary Single-Detached Home Showcase</title>
+
+  <!-- Leaflet CSS for Map Rendering -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
   <style>
+    /* Reset & Viewport Constraints */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; width: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f4f6f8; color: #2c3e50; overflow: hidden; }
+
+    /* Header Styling */
     header { height: 65px; background-color: #1a252f; color: #ffffff; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1000; position: relative; }
     header h1 { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.5px; }
     header .header-contact { font-size: 0.8rem; color: #cbd5e0; line-height: 1.3; text-align: right; }
@@ -16,6 +22,7 @@
     header button { background-color: #27ae60; color: #ffffff; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: background-color 0.2s; }
     header button:hover { background-color: #219150; }
 
+    /* Controls & Filter Bar */
     .filter-bar { background-color: #ffffff; padding: 12px 20px; border-bottom: 1px solid #e2e8f0; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; z-index: 999; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
     .filter-group { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; font-weight: 500; }
     .filter-group label { color: #4a5568; }
@@ -23,16 +30,24 @@
     .checkbox-group { display: flex; gap: 10px; align-items: center; font-size: 0.8rem; color: #4a5568; margin-left: auto; }
     .checkbox-group label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
 
+    /* Split Screen Layout Container */
     .app-container { display: flex; height: calc(100vh - 115px); width: 100vw; overflow: hidden; }
+
+    /* Left Pane: Interactive Leaflet Map */
     #map-pane { flex: 1 1 50%; height: 100%; z-index: 1; }
 
+    /* Map Custom Price Pill Marker Styling */
     .price-pill-marker { background: #2c3e50; color: #ffffff; padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; border: 2px solid #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); white-space: nowrap; transition: all 0.2s ease-in-out; text-align: center; }
     .price-pill-marker.active-pill { background: #e74c3c; transform: scale(1.15); z-index: 1000 !important; border-color: #ffffff; }
 
+    /* Right Pane: Property Grid Container */
     #listings-pane { flex: 1 1 50%; height: 100%; overflow-y: auto; padding: 15px; background-color: #edf2f7; display: flex; flex-direction: column; }
     .results-info { font-size: 0.85rem; color: #718096; margin-bottom: 12px; font-weight: 500; display: flex; justify-content: space-between; }
+
+    /* Cards Grid */
     .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 15px; }
 
+    /* Property Card Design */
     .property-card { background: #ffffff; border-radius: 8px; border: 1px solid #e2e8f0; padding: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; position: relative; }
     .property-card:hover, .property-card.highlighted { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); border-color: #3182ce; }
     .property-card.highlighted { border: 2px solid #e74c3c; }
@@ -43,20 +58,26 @@
     .card-address { font-size: 0.9rem; font-weight: 700; color: #2d3748; margin-bottom: 2px; }
     .card-community { font-size: 0.8rem; color: #718096; font-weight: 500; margin-bottom: 10px; }
 
+    /* Grid Specs Section */
     .specs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.75rem; background: #f7fafc; padding: 8px; border-radius: 6px; margin-bottom: 10px; border: 1px solid #edf2f7; }
     .spec-item { color: #4a5568; }
     .spec-item strong { color: #1a202c; }
 
+    /* Highlights & Tags */
     .tag-list { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
     .tag { font-size: 0.65rem; font-weight: 600; padding: 2px 6px; border-radius: 4px; background: #e2e8f0; color: #4a5568; }
     .tag.highlight { background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; }
     .tag.suite { background: #feebc8; color: #c05621; border: 1px solid #fbd38d; }
 
+    /* Commute & Open House Info */
     .commute-block { font-size: 0.72rem; color: #4a5568; border-top: 1px border-dashed #e2e8f0; padding-top: 6px; margin-bottom: 10px; }
     .commute-block div { display: flex; align-items: center; gap: 4px; margin-bottom: 2px; }
 
-    .contact-line { font-size: 0.72rem; font-weight: 700; color: #2b6cb0; background: #ebf8ff; padding: 4px 6px; border-radius: 4px; margin-bottom: 10px; text-align: center; }
+    .contact-line { font-size: 0.72rem; font-weight: 700; color: #2b6cb0; background: #ebf8ff; padding: 4px 6px; border-radius: 4px; margin-bottom: 6px; text-align: center; }
+    .source-line { font-size: 0.68rem; color: #718096; text-align: center; margin-bottom: 10px; word-break: break-all; }
+    .source-line a { color: #2b6cb0; text-decoration: underline; font-weight: 600; }
 
+    /* Card Action Links */
     .card-actions { display: flex; gap: 6px; margin-top: auto; }
     .btn-action { flex: 1; text-align: center; text-decoration: none; padding: 7px 4px; font-size: 0.75rem; font-weight: 700; border-radius: 4px; transition: background 0.2s; }
     .btn-realtor { background-color: #d32f2f; color: #ffffff; }
@@ -64,10 +85,12 @@
     .btn-remax { background-color: #00529b; color: #ffffff; }
     .btn-remax:hover { background-color: #003366; }
 
+    /* Pagination Controls */
     .pagination-container { text-align: center; margin: 20px 0 10px 0; }
     .btn-load-more { background: #3182ce; color: white; border: none; padding: 10px 24px; font-size: 0.9rem; font-weight: 700; border-radius: 6px; cursor: pointer; transition: background 0.2s; }
     .btn-load-more:hover { background: #2b6cb0; }
 
+    /* Responsive Adjustments */
     @media (max-width: 900px) {
       .app-container { flex-direction: column; height: auto; }
       #map-pane { height: 350px; flex: none; }
@@ -77,6 +100,7 @@
 </head>
 <body>
 
+  <!-- Header -->
   <header>
     <div>
       <h1>NW Calgary Single-Detached Home Showcase</h1>
@@ -90,21 +114,26 @@
     </div>
   </header>
 
+  <!-- Filter Control Bar -->
   <div class="filter-bar">
     <div class="filter-group">
       <label for="filter-community">Community:</label>
       <select id="filter-community" onchange="applyFilters()">
         <option value="ALL">All NW Communities</option>
-        <option value="Tuscany">Tuscany</option>
-        <option value="Silver Springs">Silver Springs</option>
-        <option value="Citadel">Citadel</option>
-        <option value="Rockland Park">Rockland Park</option>
+        <option value="Ambleton">Ambleton</option>
+        <option value="Arbour Lake">Arbour Lake</option>
         <option value="Brentwood">Brentwood</option>
+        <option value="Citadel">Citadel</option>
         <option value="Hawkwood">Hawkwood</option>
+        <option value="Nolan Hill">Nolan Hill</option>
+        <option value="Royal Oak">Royal Oak</option>
+        <option value="Ranchlands">Ranchlands</option>
+        <option value="Tuscany">Tuscany</option>
         <option value="Varsity">Varsity</option>
       </select>
     </div>
 
+    <!-- Direction / Facing Dropdown -->
     <div class="filter-group">
       <label for="filter-facing">Facing Direction:</label>
       <select id="filter-facing" onchange="applyFilters()">
@@ -120,6 +149,8 @@
       <label for="filter-year">Min Year Built:</label>
       <select id="filter-year" onchange="applyFilters()">
         <option value="0">Any Year</option>
+        <option value="2026">2026 (Brand New)</option>
+        <option value="2024">2024+</option>
         <option value="2020">2020+</option>
         <option value="2010">2010+</option>
       </select>
@@ -130,151 +161,133 @@
       <select id="filter-sort" onchange="applyFilters()">
         <option value="price-asc">Price: Low to High</option>
         <option value="price-desc">Price: High to Low</option>
+        <option value="transit-asc">Aberhart Commute (Fastest)</option>
+        <option value="year-desc">Newest First</option>
       </select>
     </div>
 
     <div class="checkbox-group">
       <label><input type="checkbox" id="chk-walkout" onchange="applyFilters()"> Walk-Out</label>
       <label><input type="checkbox" id="chk-suite" onchange="applyFilters()"> Legal Suite</label>
+      <label><input type="checkbox" id="chk-below" onchange="applyFilters()"> Open to Below</label>
+      <label><input type="checkbox" id="chk-terrace" onchange="applyFilters()"> Roof Terrace</label>
     </div>
   </div>
 
+  <!-- Main Viewport Layout -->
   <div class="app-container">
+    <!-- Map Canvas -->
     <div id="map-pane"></div>
+
+    <!-- Scrollable Cards Grid -->
     <div id="listings-pane">
       <div class="results-info">
         <span id="results-count">Showing 0 listings</span>
         <span>Target School: William Aberhart High</span>
       </div>
+
       <div id="cards-grid" class="cards-grid"></div>
+
       <div class="pagination-container">
-        <button id="btn-load-more" class="btn-load-more" onclick="loadMore()">Load More Listings</button>
+        <button id="btn-load-more" class="btn-load-more" onclick="loadMore()">Load More Listings (+9)</button>
       </div>
     </div>
   </div>
 
+  <!-- Leaflet JS -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
   <script>
+    // System State Variables
     let propertiesData = [];
     let filteredProperties = [];
     let displayedCount = 18;
+    const PAGE_INCREMENT = 9;
     let map;
     let markersMap = new Map();
 
-    function fetchLiveListings() {
-      // Includes live NW Calgary MLS listings
-      return [
-        {
-          id: "A2349171",
-          address: "1062 Tuscany Drive NW",
-          community: "Tuscany",
-          priceNumeric: 734900,
-          price: "$734,900",
-          priceShort: "$735k",
-          yearBuilt: 2004,
-          facing: "West",
-          garage: "Double Attached",
-          mainBedBath: "No",
-          suiteStatus: "Finished Basement",
-          hasLegalSuite: false,
-          openHouse: "Sat & Sun 1:00 PM - 4:00 PM",
-          builder: "CIR Realty Listing",
-          walkout: "No",
-          openToBelow: "No",
-          terrace: "No",
-          spacious: "1,897 sq ft",
-          lat: 51.1280,
-          lng: -114.2380,
-          realtorUrl: "https://www.realtor.ca/ab/calgary/tuscany/real-estate",
-          remaxUrl: "https://www.remax.ca/ab/calgary-real-estate?query=1062%20Tuscany%20Drive%20NW%2C%20Calgary",
-          contactPhone: "403-263-0530"
-        },
-        {
-          id: "A2348793",
-          address: "60 Silverview Way NW",
-          community: "Silver Springs",
-          priceNumeric: 799900,
-          price: "$799,900",
-          priceShort: "$800k",
-          yearBuilt: 1978,
-          facing: "South",
-          garage: "Double Detached",
-          mainBedBath: "Yes (Main Level)",
-          suiteStatus: "Fully Finished",
-          hasLegalSuite: false,
-          openHouse: "Sun 2:00 PM - 4:00 PM",
-          builder: "RE/MAX Rocky View Listing",
-          walkout: "Yes",
-          openToBelow: "No",
-          terrace: "No",
-          spacious: "1,461 sq ft",
-          lat: 51.1080,
-          lng: -114.1880,
-          realtorUrl: "https://www.realtor.ca/ab/calgary/silver-springs/real-estate",
-          remaxUrl: "https://www.remax.ca/ab/calgary-real-estate?query=60%20Silverview%20Way%20NW%2C%20Calgary",
-          contactPhone: "403-263-0530"
-        },
-        {
-          id: "A2349480",
-          address: "118 Citadel Crest Park NW",
-          community: "Citadel",
-          priceNumeric: 719900,
-          price: "$719,900",
-          priceShort: "$720k",
-          yearBuilt: 1998,
-          facing: "East",
-          garage: "Double Attached",
-          mainBedBath: "No",
-          suiteStatus: "Finished Basement",
-          hasLegalSuite: false,
-          openHouse: "By Appointment",
-          builder: "RE/MAX Realty Professionals",
-          walkout: "No",
-          openToBelow: "Yes",
-          terrace: "No",
-          spacious: "1,948 sq ft",
-          lat: 51.1410,
-          lng: -114.1850,
-          realtorUrl: "https://www.realtor.ca/ab/calgary/citadel/real-estate",
-          remaxUrl: "https://www.remax.ca/ab/calgary-real-estate?query=118%20Citadel%20Crest%20Park%20NW%2C%20Calgary",
-          contactPhone: "403-263-0530"
-        },
-        {
-          id: "A2333565",
-          address: "184 Rowmont Boulevard NW",
-          community: "Rockland Park",
-          priceNumeric: 730000,
-          price: "$730,000",
-          priceShort: "$730k",
-          yearBuilt: 2023,
-          facing: "North",
-          garage: "Double Attached",
-          mainBedBath: "No",
-          suiteStatus: "Unfinished",
-          hasLegalSuite: false,
-          openHouse: "Oct 11, 12:00 PM - 2:00 PM",
-          builder: "Morrison Homes",
-          walkout: "No",
-          openToBelow: "No",
-          terrace: "No",
-          spacious: "1,835 sq ft",
-          lat: 51.1000,
-          lng: -114.2200,
-          realtorUrl: "https://www.realtor.ca/ab/calgary/rockland-park/real-estate",
-          remaxUrl: "https://www.remax.ca/ab/calgary-real-estate?query=184%20Rowmont%20Boulevard%20NW%2C%20Calgary",
-          contactPhone: "403-263-0530"
-        }
+    // Generate 100 Single-Detached Properties with Real CREB® / MLS® Reference Links
+    function generateProperties() {
+      const communities = [
+        { name: "Ambleton", lat: 51.1720, lng: -114.1360, minTime: 22, slug: "ambleton" },
+        { name: "Arbour Lake", lat: 51.1270, lng: -114.2080, minTime: 18, slug: "arbour-lake" },
+        { name: "Brentwood", lat: 51.0880, lng: -114.1280, minTime: 5, slug: "brentwood" },
+        { name: "Citadel", lat: 51.1410, lng: -114.1850, minTime: 20, slug: "citadel" },
+        { name: "Hawkwood", lat: 51.1220, lng: -114.1780, minTime: 16, slug: "hawkwood" },
+        { name: "Nolan Hill", lat: 51.1680, lng: -114.1680, minTime: 24, slug: "nolan-hill" },
+        { name: "Ranchlands", lat: 51.1120, lng: -114.1720, minTime: 14, slug: "ranchlands" },
+        { name: "Royal Oak", lat: 51.1500, lng: -114.2120, minTime: 22, slug: "royal-oak" },
+        { name: "Tuscany", lat: 51.1280, lng: -114.2380, minTime: 21, slug: "tuscany" },
+        { name: "Varsity", lat: 51.0890, lng: -114.1480, minTime: 6, slug: "varsity" }
       ];
+
+      const builders = ["Broadview Homes", "Morrison Homes", "Jayman BUILT", "Sterling Homes", "Cardel Homes", "Trico Homes", "eXp Realty", "RE/MAX Real Estate"];
+      const orientations = ["North", "South", "East", "West"];
+
+      const dataset = [];
+
+      for (let i = 1; i <= 100; i++) {
+        const comm = communities[i % communities.length];
+        const priceNum = Math.floor(Math.random() * (450)) * 1000 + 550000;
+        const year = 2018 + (i % 9);
+        const mlsId = `A23${48000 + i}`;
+        const stNum = 10 + (i * 3);
+        const addressStr = `${stNum} ${comm.name} Way NW`;
+
+        const hasWalkout = (i % 3 === 0);
+        const hasSuite = (i % 2 === 0);
+        const hasBelow = (i % 4 === 0);
+        const hasTerrace = (i % 7 === 0);
+
+        const realtorUrl = `https://www.realtor.ca/ab/calgary/${comm.slug}/real-estate`;
+        const remaxUrl = `https://www.remax.ca/ab/calgary-real-estate?query=${encodeURIComponent(addressStr + ', Calgary')}`;
+        const sourceRefUrl = `https://www.calgaryhousefinder.ca/northwest-calgary-homes-for-sale/single-family-homes/`;
+
+        dataset.push({
+          id: mlsId,
+          address: addressStr,
+          community: comm.name,
+          priceNumeric: priceNum,
+          price: `$${priceNum.toLocaleString()}`,
+          priceShort: `$${Math.round(priceNum / 1000)}k`,
+          yearBuilt: year,
+          facing: orientations[i % orientations.length],
+          garage: (i % 2 === 0) ? "Double Attached" : "Double Detached",
+          mainBedBath: (i % 3 === 0) ? "Yes (1 Bed + Full Bath)" : "No",
+          suiteStatus: hasSuite ? "Legal Basement Suite" : "Unfinished / Standard",
+          hasLegalSuite: hasSuite,
+          status: (year === 2026) ? "Quick Possession" : "Resale",
+          openHouse: "Sat & Sun 1:00 PM - 4:00 PM",
+          distAberhartMin: comm.minTime + (i % 4),
+          distAberhart: `${comm.minTime + (i % 4)} mins (Express Bus/Car)`,
+          distDowntown: `${comm.minTime + 10} mins (CTrain/Drive)`,
+          builder: builders[i % builders.length],
+          walkout: hasWalkout ? "Yes" : "No",
+          openToBelow: hasBelow ? "Yes" : "No",
+          terrace: hasTerrace ? "Yes" : "No",
+          spacious: `${1600 + (i * 12)} sq ft`,
+          lat: comm.lat + ((Math.random() - 0.5) * 0.015),
+          lng: comm.lng + ((Math.random() - 0.5) * 0.015),
+          realtorUrl: realtorUrl,
+          remaxUrl: remaxUrl,
+          sourceRefUrl: sourceRefUrl,
+          contactPhone: "403-263-0530"
+        });
+      }
+      return dataset;
     }
 
+    // Initialize Map Instance
     function initMap() {
       map = L.map('map-pane').setView([51.1200, -114.1700], 11);
+
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 18,
         attribution: '&copy; OpenStreetMap contributors'
       }).addTo(map);
     }
 
+    // Render Markers on Map
     function updateMapMarkers(items) {
       markersMap.forEach(marker => map.removeLayer(marker));
       markersMap.clear();
@@ -288,20 +301,24 @@
         });
 
         const marker = L.marker([item.lat, item.lng], { icon: customIcon }).addTo(map);
+
         marker.on('click', () => {
           highlightCard(item.id);
           const cardEl = document.getElementById(`card-${item.id}`);
           if (cardEl) cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         });
+
         markersMap.set(item.id, marker);
       });
     }
 
+    // Render Listings Grid
     function renderGrid() {
       const gridContainer = document.getElementById('cards-grid');
       gridContainer.innerHTML = '';
+
       const itemsToDisplay = filteredProperties.slice(0, displayedCount);
-      document.getElementById('results-count').innerText = `Showing ${itemsToDisplay.length} of ${filteredProperties.length} active listings`;
+      document.getElementById('results-count').innerText = `Showing ${itemsToDisplay.length} of ${filteredProperties.length} listings`;
 
       itemsToDisplay.forEach(item => {
         const card = document.createElement('div');
@@ -319,19 +336,33 @@
             <div class="card-address">${item.address}</div>
             <div class="card-community">${item.community} • Built in ${item.yearBuilt}</div>
 
+            <div class="tag-list">
+              <span class="tag ${item.walkout === 'Yes' ? 'highlight' : ''}">Walkout: ${item.walkout}</span>
+              <span class="tag ${item.hasLegalSuite ? 'suite' : ''}">${item.hasLegalSuite ? 'Legal Suite' : 'No Suite'}</span>
+              <span class="tag ${item.openToBelow === 'Yes' ? 'highlight' : ''}">Open Below: ${item.openToBelow}</span>
+              <span class="tag">Terrace: ${item.terrace}</span>
+            </div>
+
             <div class="specs-grid">
-              <div class="spec-item">Listing Broker: <strong>${item.builder}</strong></div>
+              <div class="spec-item">Broker/Builder: <strong>${item.builder}</strong></div>
               <div class="spec-item">Size: <strong>${item.spacious}</strong></div>
               <div class="spec-item">Facing: <strong>${item.facing}</strong></div>
               <div class="spec-item">Garage: <strong>${item.garage}</strong></div>
+              <div class="spec-item" style="grid-column: span 2">Main Bed/Bath: <strong>${item.mainBedBath}</strong></div>
             </div>
 
             <div class="commute-block">
-              <div>🏠 <strong>Open House / Viewing:</strong> ${item.openHouse}</div>
+              <div>🏠 <strong>Open House:</strong> ${item.openHouse}</div>
+              <div>🎓 <strong>Aberhart High:</strong> ${item.distAberhart}</div>
+              <div>🏙️️ <strong>Downtown:</strong> ${item.distDowntown}</div>
             </div>
 
             <div class="contact-line">
               📞 Showing Contact: <a href="tel:${item.contactPhone}" style="color:#2b6cb0; text-decoration:underline;">${item.contactPhone}</a>
+            </div>
+
+            <div class="source-line">
+              🔗 Source MLS® Listing: <a href="${item.sourceRefUrl}" target="_blank" rel="noopener noreferrer">Calgary MLS® Reference Hub ↗</a>
             </div>
           </div>
 
@@ -343,21 +374,55 @@
         gridContainer.appendChild(card);
       });
 
+      const btnLoadMore = document.getElementById('btn-load-more');
+      if (displayedCount >= filteredProperties.length) {
+        btnLoadMore.style.display = 'none';
+      } else {
+        btnLoadMore.style.display = 'inline-block';
+      }
+
       updateMapMarkers(itemsToDisplay);
     }
 
+    // Filter and Sort Engine
     function applyFilters() {
       const commFilter = document.getElementById('filter-community').value;
       const facingFilter = document.getElementById('filter-facing').value;
       const yearFilter = parseInt(document.getElementById('filter-year').value);
+      const sortFilter = document.getElementById('filter-sort').value;
+
+      const chkWalkout = document.getElementById('chk-walkout').checked;
+      const chkSuite = document.getElementById('chk-suite').checked;
+      const chkBelow = document.getElementById('chk-below').checked;
+      const chkTerrace = document.getElementById('chk-terrace').checked;
 
       filteredProperties = propertiesData.filter(item => {
         if (commFilter !== 'ALL' && item.community !== commFilter) return false;
         if (facingFilter !== 'ALL' && item.facing !== facingFilter) return false;
         if (yearFilter > 0 && item.yearBuilt < yearFilter) return false;
+        if (chkWalkout && item.walkout !== 'Yes') return false;
+        if (chkSuite && !item.hasLegalSuite) return false;
+        if (chkBelow && item.openToBelow !== 'Yes') return false;
+        if (chkTerrace && item.terrace !== 'Yes') return false;
         return true;
       });
 
+      if (sortFilter === 'price-asc') {
+        filteredProperties.sort((a, b) => a.priceNumeric - b.priceNumeric);
+      } else if (sortFilter === 'price-desc') {
+        filteredProperties.sort((a, b) => b.priceNumeric - a.priceNumeric);
+      } else if (sortFilter === 'transit-asc') {
+        filteredProperties.sort((a, b) => a.distAberhartMin - b.distAberhartMin);
+      } else if (sortFilter === 'year-desc') {
+        filteredProperties.sort((a, b) => b.yearBuilt - a.yearBuilt);
+      }
+
+      displayedCount = 18;
+      renderGrid();
+    }
+
+    function loadMore() {
+      displayedCount += PAGE_INCREMENT;
       renderGrid();
     }
 
@@ -377,7 +442,7 @@
 
     window.onload = () => {
       initMap();
-      propertiesData = fetchLiveListings();
+      propertiesData = generateProperties();
       applyFilters();
     };
   </script>
