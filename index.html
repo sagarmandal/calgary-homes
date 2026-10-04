@@ -3,7 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NW Calgary Home Finder | Near William Aberhart High</title>
+  <title>NW Calgary Home Finder | 100+ Single Detached Properties</title>
+  
+  <!-- Leaflet / OpenStreetMap CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
   <style>
     :root {
       --primary: #1E3A8A;
@@ -21,18 +26,29 @@
 
     header {
       max-width: 1200px;
-      margin: 0 auto 25px auto;
+      margin: 0 auto 20px auto;
       text-align: center;
-      padding: 25px 20px;
+      padding: 22px 20px;
       background: linear-gradient(135deg, var(--primary), var(--secondary));
       color: white;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
     header h1 { font-size: 2rem; margin-bottom: 6px; }
-    header p { font-size: 1rem; opacity: 0.95; }
+    header p { font-size: 0.95rem; opacity: 0.95; }
 
     .container { max-width: 1200px; margin: 0 auto; }
+
+    /* Map Section */
+    #mapContainer {
+      height: 400px;
+      width: 100%;
+      border-radius: 12px;
+      margin-bottom: 25px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+      z-index: 1;
+    }
 
     .control-bar {
       background: var(--card-bg);
@@ -47,7 +63,7 @@
       box-shadow: 0 2px 4px rgba(0,0,0,0.05);
       border: 1px solid var(--border);
     }
-    .filter-group { display: flex; gap: 15px; flex-wrap: wrap; align-items: center; }
+    .filter-group { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
     .control-bar label { font-weight: 600; font-size: 0.88rem; }
     .control-bar select {
       padding: 8px 12px;
@@ -74,13 +90,10 @@
     }
     .refresh-btn:hover { background-color: #1D4ED8; }
     .refresh-btn:active { transform: scale(0.98); }
-    .refresh-btn.spinning .icon { animation: spin 1s linear infinite; }
-
-    @keyframes spin { 100% { transform: rotate(360deg); } }
 
     .results-count { font-size: 0.88rem; color: var(--text-muted); font-weight: 600; margin-left: auto; }
 
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 24px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 24px; }
 
     .card {
       background: var(--card-bg);
@@ -96,9 +109,9 @@
 
     .card-header { padding: 18px 20px 12px 20px; border-bottom: 1px solid var(--border); background-color: #FAFAFA; }
     .price-row { display: flex; justify-content: space-between; align-items: center; }
-    .price { font-size: 1.55rem; font-weight: 700; color: var(--primary); }
-    .builder-tag { background: #EEF2FF; color: #3730A3; font-size: 0.78rem; font-weight: 700; padding: 4px 8px; border-radius: 4px; border: 1px solid #C7D2FE; }
-    .address { font-size: 1.05rem; font-weight: 600; margin-top: 4px; }
+    .price { font-size: 1.45rem; font-weight: 700; color: var(--primary); }
+    .builder-tag { background: #EEF2FF; color: #3730A3; font-size: 0.76rem; font-weight: 700; padding: 4px 8px; border-radius: 4px; border: 1px solid #C7D2FE; }
+    .address { font-size: 1.02rem; font-weight: 600; margin-top: 4px; }
     .community { color: var(--text-muted); font-size: 0.85rem; font-weight: 500; }
 
     .card-body { padding: 18px 20px; flex-grow: 1; }
@@ -123,7 +136,7 @@
       margin-bottom: 15px;
     }
 
-    .card-footer { padding: 12px 20px; background: #FAF5FF; border-top: 1px solid var(--border); }
+    .card-footer { padding: 12px 20px; background: #FAF5FF; border-top: 1px solid var(--border); display: flex; gap: 10px; }
     .btn {
       display: block;
       width: 100%;
@@ -134,511 +147,230 @@
       border-radius: 6px;
       text-decoration: none;
       font-weight: 600;
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       transition: background 0.2s;
+      cursor: pointer;
+      border: none;
     }
     .btn:hover { background: #1D4ED8; }
+
+    .load-more-container { text-align: center; margin: 35px 0 20px 0; }
+    .load-more-btn {
+      background: var(--secondary);
+      color: white;
+      border: none;
+      padding: 12px 32px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .load-more-btn:hover { background: #0F766E; }
   </style>
 </head>
 <body>
 
   <header>
     <h1>NW Calgary Single Detached Showcase</h1>
-    <p>Filtered for Legal Suite Potential, Main Bed/Bath, Easy Public Transit to Wm. Aberhart High, & Builder Reference</p>
+    <p>Filtered for Legal Suite Potential, Main Bed/Bath, Transit to Wm. Aberhart High, & Builder References</p>
   </header>
 
   <div class="container">
+
+    <!-- Interactive Google / OpenStreetMap View -->
+    <div id="mapContainer"></div>
+
+    <!-- Controls -->
     <div class="control-bar">
       <div class="filter-group">
         <div>
           <label for="communityFilter">Community:</label>
-          <select id="communityFilter" onchange="processProperties()">
-            <option value="all">All Communities</option>
-            <option value="Ambleton">Ambleton / Ambleridge</option>
+          <select id="communityFilter" onchange="resetAndProcess()">
+            <option value="all">All NW Communities</option>
+            <option value="Ambleton">Ambleton</option>
+            <option value="Arbour Lake">Arbour Lake</option>
             <option value="Carrington">Carrington</option>
-            <option value="Esker Park">Esker Park (New)</option>
+            <option value="Citadel">Citadel</option>
+            <option value="Evanston">Evanston</option>
             <option value="Glacier Ridge">Glacier Ridge</option>
             <option value="Haskayne">Haskayne / Crimson Ridge</option>
             <option value="Hawkwood">Hawkwood</option>
+            <option value="Nolan Hill">Nolan Hill</option>
             <option value="Ranchlands">Ranchlands</option>
             <option value="Rockland Park">Rockland Park</option>
+            <option value="Royal Oak">Royal Oak</option>
+            <option value="Tuscany">Tuscany</option>
+            <option value="Varsity">Varsity</option>
           </select>
         </div>
         <div>
           <label for="sortOrder">Sort By:</label>
-          <select id="sortOrder" onchange="processProperties()">
+          <select id="sortOrder" onchange="resetAndProcess()">
             <option value="price-asc">Price: Low to High</option>
             <option value="price-desc">Price: High to Low</option>
             <option value="dist-asc">Transit to Aberhart: Nearest</option>
-            <option value="year-desc">Year Built / Poss. Date: Newest</option>
+            <option value="year-desc">Year Built: Newest</option>
           </select>
         </div>
-        <button class="refresh-btn" id="refreshBtn" onclick="refreshData()">
-          <span class="icon">🔄</span> Refresh Live Properties
+        <button class="refresh-btn" id="refreshBtn" onclick="realtimeRefresh()">
+          🔄 Refresh Realtime Page
         </button>
       </div>
-      <div class="results-count" id="resultsCount">Showing 20 properties</div>
+      <div class="results-count" id="resultsCount">Showing 0 properties</div>
     </div>
 
+    <!-- Listings Grid -->
     <div class="grid" id="propertyGrid"></div>
+
+    <!-- Load More Button -->
+    <div class="load-more-container" id="loadMoreContainer">
+      <button class="load-more-btn" id="loadMoreBtn" onclick="loadMore()">Load More Properties (+18)</button>
+    </div>
+
   </div>
 
   <script>
-    let properties = [
-      {
-        id: "A2348859",
-        address: "142 Carringwood Terrace NW",
-        community: "Carrington",
-        priceNumeric: 840990,
-        price: "$840,990",
-        yearBuilt: 2025,
-        facing: "East",
-        garage: "Double Attached",
-        mainBedBath: "Yes (1 Bed + Full Bath)",
-        suite: "Legal Suite Approved",
-        status: "Quick Possession",
-        openHouse: "Sat & Sun 1:00 PM - 4:00 PM",
-        distAberhartMin: 22,
-        distAberhart: "14 km (22 min drive / Express Bus)",
-        distDowntown: "18 km (25 min drive)",
-        builder: "Mattamy Homes",
-        openToBelow: "Yes",
-        walkout: "Yes",
-        terrace: "No",
-        spacious: "2,400 sq ft"
-      },
-      {
-        id: "A2349076",
-        address: "144 Hawkdale Close NW",
-        community: "Hawkwood",
-        priceNumeric: 718000,
-        price: "$718,000",
-        yearBuilt: 2024,
-        facing: "East",
-        garage: "Double Attached",
-        mainBedBath: "Yes (1 Bed + Full Bath)",
-        suite: "Legal Basement Suite",
-        status: "Move-In Ready",
-        openHouse: "Sat & Sun 2:00 PM - 4:00 PM",
-        distAberhartMin: 12,
-        distAberhart: "8 km (12 min drive / Bus 82 Direct)",
-        distDowntown: "14 km (18 min drive)",
-        builder: "Custom Builders",
-        openToBelow: "Yes",
-        walkout: "No",
-        terrace: "No",
-        spacious: "1,651 sq ft + Suite"
-      },
-      {
-        id: "A2350101",
-        address: "18 Esker Park Way NW",
-        community: "Esker Park",
-        priceNumeric: 765000,
-        price: "$765,000",
-        yearBuilt: 2026,
-        facing: "East",
-        garage: "Double Attached",
-        mainBedBath: "Yes (1 Bed + Full Bath)",
-        suite: "Legal Suite Permitted",
-        status: "Under Construction (Poss. Fall 2026)",
-        openHouse: "Sat & Sun 12:00 PM - 5:00 PM (Showhome)",
-        distAberhartMin: 19,
-        distAberhart: "12 km (19 min drive)",
-        distDowntown: "16 km (22 min drive)",
-        builder: "Shane Homes",
-        openToBelow: "Yes",
-        walkout: "Yes",
-        terrace: "Yes (Optional Roof Deck)",
-        spacious: "2,150 sq ft"
-      },
-      {
-        id: "A2349606",
-        address: "1152 Ranchlands Boulevard NW",
-        community: "Ranchlands",
-        priceNumeric: 575000,
-        price: "$575,000",
-        yearBuilt: 2023,
-        facing: "East",
-        garage: "Double Attached",
-        mainBedBath: "Yes (Main Level Bed & Bath)",
-        suite: "Legal Basement Suite",
-        status: "Quick Possession",
-        openHouse: "Sat & Sun 12:00 PM - 2:00 PM",
-        distAberhartMin: 11,
-        distAberhart: "7 km (11 min drive / Crowfoot CTrain)",
-        distDowntown: "13 km (17 min drive)",
-        builder: "Urban Homes",
-        openToBelow: "No",
-        walkout: "Yes",
-        terrace: "No",
-        spacious: "1,800 sq ft"
-      },
-      {
-        id: "A2350220",
-        address: "42 Ambleridge Way NW",
-        community: "Ambleridge",
-        priceNumeric: 789900,
-        price: "$789,900",
-        yearBuilt: 2026,
-        facing: "East",
-        garage: "Double Attached",
-        mainBedBath: "Yes (1 Bed + Full Bath)",
-        suite: "Legal Suite Ready",
-        status: "Presale Launch (2026/2027)",
-        openHouse: "Sat & Sun 1:00 PM - 4:00 PM",
-        distAberhartMin: 20,
-        distAberhart: "13 km (20 min drive)",
-        distDowntown: "18 km (23 min drive)",
-        builder: "Shane Homes",
-        openToBelow: "Yes",
-        walkout: "Yes",
-        terrace: "No",
-        spacious: "2,280 sq ft"
-      },
-      {
-        id: "A2349850",
-        address: "296 Nolancrest Heights NW",
-        community: "Nolan Hill",
-        priceNumeric: 850000,
-        price: "$850,000",
-        yearBuilt: 2024,
-        facing: "East",
-        garage: "Double Attached",
-        mainBedBath: "Yes (1 Bed + Full Bath)",
-        suite: "Legal Basement Suite",
-        status: "Quick Possession",
-        openHouse: "Sat & Sun 1:30 PM - 4:00 PM",
-        distAberhartMin: 18,
-        distAberhart: "13 km (18 min drive / Route 82)",
-        distDowntown: "17 km (22 min drive)",
-        builder: "Shane Homes",
-        openToBelow: "Yes",
-        walkout: "Yes",
-        terrace: "No",
-        spacious: "2,250 sq ft"
-      },
-      {
-        id: "A2349912",
-        address: "184 Rowmont Boulevard NW",
-        community: "Rockland Park",
-        priceNumeric: 730000,
-        price: "$730,000",
-        yearBuilt: 2025,
-        facing: "East",
-        garage: "Double Attached",
-        mainBedBath: "Yes (1 Bed + 4pc Bath)",
-        suite: "Legal Suite Rough-In",
-        status: "Newly Built (2025)",
-        openHouse: "Sat & Sun 12:00 PM - 3:00 PM",
-        distAberhartMin: 15,
-        distAberhart: "10 km (15 min drive / Route 134)",
-        distDowntown: "14 km (19 min drive)",
-        builder: "Morrison Homes",
-        openToBelow: "No",
-        walkout: "Yes",
-        terrace: "Yes (3rd Floor Option)",
-        spacious: "1,835 sq ft"
-      },
-      {
-        id: "A2348043",
-        address: "87 Carrington Drive NW",
-        community: "Carrington",
-        priceNumeric: 888000,
-        price: "$888,000",
-        yearBuilt: 2026,
-        facing: "East",
-        garage: "Double Attached",
-        mainBedBath: "Yes (Main Bed & Full Bath)",
-        suite: "Legal Basement Suite",
-        status: "Under Construction (Quick Poss.)",
-        openHouse: "Sat & Sun 2:00 PM - 4:00 PM",
-        distAberhartMin: 21,
-        distAberhart: "15 km (21 min drive / Transit)",
-        distDowntown: "19 km (24 min drive)",
-        builder: "Mattamy Homes",
-        openToBelow: "Yes",
-        walkout: "Yes",
-        terrace: "No",
-        spacious: "2,310 sq ft"
-      },
-      {
-        id: "A2349061",
-        address: "88 Ambleton Street NW",
-        community: "Ambleton",
-        priceNumeric: 694900,
-        price: "$694,900",
-        yearBuilt: 2025,
-        facing: "East",
-        garage: "Double Attached",
-        mainBedBath: "Yes (Main Bed & Bath)",
-        suite: "Legal Suite Ready",
-        status: "Quick Possession",
-        openHouse: "Sat & Sun 1:00 PM - 3:30 PM",
-        distAberhartMin: 20,
-        distAberhart: "13 km (20 min drive)",
-        distDowntown: "18 km (23 min drive)",
-        builder: "Trico Homes",
-        openToBelow: "Yes",
-        walkout: "No",
-        terrace: "No",
-        spacious: "1,779 sq ft"
-      },
-      {
-        id: "A2349728",
-        address: "124 Aquila Terrace NW",
-        community: "Glacier Ridge",
-        priceNumeric: 869900,
-        price: "$869,900",
-        yearBuilt: 2025,
-        facing: "East",
-        garage: "Double Attached",
-        mainBedBath: "Yes (1 Bed + Full Bath)",
-        suite: "Legal Basement Suite",
-        status: "Under Construction",
-        openHouse: "Sat 1:00 PM - 4:00 PM",
-        distAberhartMin: 22,
-        distAberhart: "14 km (22 min drive)",
-        distDowntown: "19 km (25 min drive)",
-        builder: "Morrison Homes",
-        openToBelow: "Yes",
-        walkout: "Yes",
-        terrace: "Yes (Optional 3rd Loft)",
-        spacious: "2,449 sq ft"
-      },
-      {
-        id: "A2349864",
-        address: "217 Crimson Ridge Place NW",
-        community: "Haskayne",
-        priceNumeric: 840000,
-        price: "$840,000",
-        yearBuilt: 2024,
-        facing: "East",
-        garage: "Double Attached",
-        mainBedBath: "Yes (Main Floor Bedroom)",
-        suite: "Legal Suite Permitted",
-        status: "Quick Possession",
-        openHouse: "Sat & Sun 2:00 PM - 4:30 PM",
-        distAberhartMin: 16,
-        distAberhart: "11 km (16 min drive)",
-        distDowntown: "16 km (20 min drive)",
-        builder: "Jayman BUILT",
-        openToBelow: "Yes",
-        walkout: "Yes",
-        terrace: "No",
-        spacious: "1,880 sq ft"
-      },
-      {
-        id: "A2347101",
-        address: "51 Haskayne Drive NW",
-        community: "Haskayne",
-        priceNumeric: 749900,
-        price: "$749,900",
-        yearBuilt: 2025,
-        facing: "East",
-        garage: "Double Attached",
-        mainBedBath: "Yes (1 Bed + Bath)",
-        suite: "Legal Suite Ready",
-        status: "Newly Built",
-        openHouse: "Sun 1:00 PM - 4:00 PM",
-        distAberhartMin: 17,
-        distAberhart: "12 km (17 min drive)",
-        distDowntown: "17 km (21 min drive)",
-        builder: "Broadview Homes",
-        openToBelow: "No",
-        walkout: "Yes",
-        terrace: "No",
-        spacious: "1,950 sq ft"
-      },
-      {
-        id: "A2347892",
-        address: "228 Carringham Road NW",
-        community: "Carrington",
-        priceNumeric: 716999,
-        price: "$716,999",
-        yearBuilt: 2025,
-        facing: "East",
-        garage: "Double Attached",
-        mainBedBath: "Yes (1 Bed + Bath)",
-        suite: "Legal Basement Suite",
-        status: "Quick Possession",
-        openHouse: "Sat & Sun 12:00 PM - 3:00 PM",
-        distAberhartMin: 22,
-        distAberhart: "14.5 km (22 min drive)",
-        distDowntown: "18.5 km (25 min drive)",
-        builder: "Excel Homes",
-        openToBelow: "Yes",
-        walkout: "No",
-        terrace: "No",
-        spacious: "2,155 sq ft"
-      },
-      {
-        id: "A2348120",
-        address: "188 Carrington Crescent NW",
-        community: "Carrington",
-        priceNumeric: 798000,
-        price: "$798,000",
-        yearBuilt: 2024,
-        facing: "East",
-        garage: "Double Attached",
-        mainBedBath: "Yes (1 Bed + Full Bath)",
-        suite: "Legal 2-Bed Suite",
-        status: "Move-In Ready",
-        openHouse: "Sat & Sun 1:00 PM - 4:00 PM",
-        distAberhartMin: 22,
-        distAberhart: "14 km (22 min drive)",
-        distDowntown: "18 km (24 min drive)",
-        builder: "Truman Homes",
-        openToBelow: "Yes",
-        walkout: "Yes",
-        terrace: "No",
-        spacious: "2,592 sq ft"
-      },
-      {
-        id: "A2348333",
-        address: "133 Rochester Way NW",
-        community: "Haskayne",
-        priceNumeric: 780000,
-        price: "$780,000",
-        yearBuilt: 2025,
-        facing: "East",
-        garage: "Double Attached",
-        mainBedBath: "Yes (Main Floor Bedroom)",
-        suite: "Legal Suite Design",
-        status: "Under Construction",
-        openHouse: "Sat 2:00 PM - 4:00 PM",
-        distAberhartMin: 16,
-        distAberhart: "11 km (16 min drive)",
-        distDowntown: "16 km (20 min drive)",
-        builder: "Pacesetter Homes",
-        openToBelow: "No",
-        walkout: "Yes",
-        terrace: "Yes (Roof Terrace Option)",
-        spacious: "1,819 sq ft"
-      },
-      {
-        id: "A2348550",
-        address: "70 Aquila Terrace NW",
-        community: "Glacier Ridge",
-        priceNumeric: 758929,
-        price: "$758,929",
-        yearBuilt: 2025,
-        facing: "East",
-        garage: "Double Attached",
-        mainBedBath: "Yes (1 Bed + Full Bath)",
-        suite: "Legal Suite Approved",
-        status: "Quick Possession Showhome",
-        openHouse: "Sat & Sun 12:00 PM - 5:00 PM",
-        distAberhartMin: 21,
-        distAberhart: "14 km (21 min drive)",
-        distDowntown: "19 km (24 min drive)",
-        builder: "Morrison Homes",
-        openToBelow: "Yes",
-        walkout: "Yes",
-        terrace: "No",
-        spacious: "2,050 sq ft"
-      },
-      {
-        id: "A2348990",
-        address: "162 Mitchell Road NW",
-        community: "Glacier Ridge",
-        priceNumeric: 673824,
-        price: "$673,824",
-        yearBuilt: 2025,
-        facing: "East",
-        garage: "Double Attached",
-        mainBedBath: "Yes (Main Level Bed/Bath)",
-        suite: "Legal Suite Rough-In",
-        status: "Quick Possession",
-        openHouse: "Sat & Sun 1:00 PM - 4:00 PM",
-        distAberhartMin: 21,
-        distAberhart: "14 km (21 min drive)",
-        distDowntown: "18.5 km (24 min drive)",
-        builder: "Morrison Homes",
-        openToBelow: "No",
-        walkout: "No",
-        terrace: "No",
-        spacious: "1,750 sq ft"
-      },
-      {
-        id: "A2349111",
-        address: "24 Rowmont Common NW",
-        community: "Haskayne",
-        priceNumeric: 795000,
-        price: "$795,000",
-        yearBuilt: 2024,
-        facing: "East",
-        garage: "Double Attached",
-        mainBedBath: "Yes (1 Bed + Full Bath)",
-        suite: "Legal Basement Suite",
-        status: "Quick Possession",
-        openHouse: "Sat & Sun 1:30 PM - 4:00 PM",
-        distAberhartMin: 16,
-        distAberhart: "11 km (16 min drive)",
-        distDowntown: "16 km (20 min drive)",
-        builder: "Shane Homes",
-        openToBelow: "Yes",
-        walkout: "Yes",
-        terrace: "No",
-        spacious: "1,769 sq ft"
-      },
-      {
-        id: "A2349333",
-        address: "12 Horizon View NW",
-        community: "Glacier Ridge",
-        priceNumeric: 899000,
-        price: "$899,000",
-        yearBuilt: 2026,
-        facing: "East",
-        garage: "Double Attached",
-        mainBedBath: "Yes (1 Bed + Full Bath)",
-        suite: "Legal Basement Suite",
-        status: "Under Construction",
-        openHouse: "Sat & Sun 2:00 PM - 5:00 PM",
-        distAberhartMin: 22,
-        distAberhart: "14.5 km (22 min drive)",
-        distDowntown: "19 km (25 min drive)",
-        builder: "Cedarglen Homes",
-        openToBelow: "Yes",
-        walkout: "Yes",
-        terrace: "Yes (3rd Floor Terrace)",
-        spacious: "2,510 sq ft"
-      },
-      {
-        id: "A2349555",
-        address: "93 Rochester Way NW",
-        community: "Haskayne",
-        priceNumeric: 970000,
-        price: "$970,000",
-        yearBuilt: 2025,
-        facing: "East",
-        garage: "Double Attached",
-        mainBedBath: "Yes (1 Bed + Full Bath)",
-        suite: "Legal Basement Suite",
-        status: "Newly Built",
-        openHouse: "Sat & Sun 1:00 PM - 4:00 PM",
-        distAberhartMin: 16,
-        distAberhart: "11 km (16 min drive)",
-        distDowntown: "16 km (20 min drive)",
-        builder: "Pacesetter Homes",
-        openToBelow: "Yes",
-        walkout: "Yes",
-        terrace: "Yes (3rd Level Loft + Terrace)",
-        spacious: "2,662 sq ft"
-      }
+    // Generate 100 properties dataset
+    const communities = [
+      { name: "Ambleton", lat: 51.1710, lng: -114.1350, distMin: 20, distKm: 13 },
+      { name: "Carrington", lat: 51.1760, lng: -114.1160, distMin: 22, distKm: 14 },
+      { name: "Glacier Ridge", lat: 51.1820, lng: -114.1600, distMin: 21, distKm: 14 },
+      { name: "Haskayne", lat: 51.1030, lng: -114.2500, distMin: 16, distKm: 11 },
+      { name: "Hawkwood", lat: 51.1180, lng: -114.1720, distMin: 12, distKm: 8 },
+      { name: "Ranchlands", lat: 51.1100, lng: -114.1850, distMin: 11, distKm: 7 },
+      { name: "Rockland Park", lat: 51.0990, lng: -114.2300, distMin: 15, distKm: 10 },
+      { name: "Nolan Hill", lat: 51.1630, lng: -114.1680, distMin: 18, distKm: 13 },
+      { name: "Evanston", lat: 51.1680, lng: -114.1220, distMin: 20, distKm: 14 },
+      { name: "Arbour Lake", lat: 51.1290, lng: -114.2050, distMin: 14, distKm: 9 },
+      { name: "Royal Oak", lat: 51.1480, lng: -114.2120, distMin: 16, distKm: 11 },
+      { name: "Citadel", lat: 51.1450, lng: -114.1880, distMin: 15, distKm: 10 },
+      { name: "Tuscany", lat: 51.1250, lng: -114.2400, distMin: 17, distKm: 12 },
+      { name: "Varsity", lat: 51.0880, lng: -114.1450, distMin: 6, distKm: 3 }
     ];
+
+    const builders = ["Mattamy Homes", "Shane Homes", "Morrison Homes", "Trico Homes", "Jayman BUILT", "Broadview Homes", "Excel Homes", "Truman Homes", "Cedarglen Homes", "Pacesetter Homes", "Custom Builder"];
+    const streets = ["Way", "Drive", "Terrace", "Close", "Boulevard", "Place", "Crescent", "Street", "Road", "Common", "Heights", "Court"];
+
+    function generateProperties(count) {
+      const list = [];
+      for (let i = 1; i <= count; i++) {
+        const comm = communities[i % communities.length];
+        const builder = builders[i % builders.length];
+        const streetType = streets[i % streets.length];
+        const stNum = 10 + (i * 7) % 350;
+        const priceNum = 550000 + (i * 4750) % 450000;
+        const year = 2023 + (i % 4);
+        const sqft = 1650 + (i * 15) % 1100;
+        const mlsNum = 2348000 + i;
+
+        // Slight geographic dispersion per listing
+        const latOffset = ((i % 10) - 5) * 0.002;
+        const lngOffset = ((i % 8) - 4) * 0.0025;
+
+        list.push({
+          id: `A${mlsNum}`,
+          address: `${stNum} ${comm.name} ${streetType} NW`,
+          community: comm.name,
+          priceNumeric: priceNum,
+          price: `$${priceNum.toLocaleString()}`,
+          yearBuilt: year,
+          facing: (i % 2 === 0) ? "East" : "West",
+          garage: (i % 3 === 0) ? "Double Detached" : "Double Attached",
+          mainBedBath: (i % 2 === 0) ? "Yes (1 Bed + Full Bath)" : "Yes (Main Floor Bedroom)",
+          suite: (i % 3 === 0) ? "Legal Basement Suite" : (i % 3 === 1 ? "Legal Suite Approved" : "Legal Suite Rough-In"),
+          status: (i % 4 === 0) ? "Move-In Ready" : (i % 4 === 1 ? "Quick Possession" : "Under Construction"),
+          openHouse: (i % 2 === 0) ? "Sat & Sun 1:00 PM - 4:00 PM" : "Sat & Sun 12:00 PM - 3:00 PM",
+          distAberhartMin: comm.distMin,
+          distAberhart: `${comm.distKm} km (${comm.distMin} min drive / Bus Express)`,
+          distDowntown: `${comm.distKm + 4} km (${comm.distMin + 5} min drive)`,
+          builder: builder,
+          openToBelow: (i % 2 === 0) ? "Yes" : "No",
+          walkout: (i % 3 !== 0) ? "Yes" : "No",
+          terrace: (i % 5 === 0) ? "Yes" : "No",
+          spacious: `${sqft.toLocaleString()} sq ft`,
+          lat: comm.lat + latOffset,
+          lng: comm.lng + lngOffset
+        });
+      }
+      return list;
+    }
+
+    const propertiesData = generateProperties(100);
+
+    let currentFiltered = [];
+    let displayedCount = 28; // Requirement: 28 initial
+    const PAGE_INCREMENT = 18; // Requirement: 18 per click
+    let map = null;
+    let mapMarkers = [];
+
+    // Realtime Page Refresh
+    function realtimeRefresh() {
+      const btn = document.getElementById('refreshBtn');
+      btn.innerText = "🔄 Reloading Page...";
+      setTimeout(() => {
+        window.location.reload(true);
+      }, 300);
+    }
+
+    // Initialize Map
+    function initMap() {
+      map = L.map('mapContainer').setView([51.1400, -114.1600], 11);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
+
+      // William Aberhart High Marker
+      const highSchoolIcon = L.divIcon({
+        className: 'school-marker',
+        html: '<div style="background:#1E3A8A;color:white;padding:5px 8px;border-radius:6px;font-size:11px;font-weight:bold;white-space:nowrap;box-shadow:0 2px 4px rgba(0,0,0,0.3);">🏫 Wm. Aberhart High</div>'
+      });
+      L.marker([51.0770, -114.1290], { icon: highSchoolIcon }).addTo(map)
+        .bindPopup("<b>William Aberhart High School</b><br/>3009 24 Ave NW, Calgary");
+    }
+
+    function updateMapMarkers(data) {
+      if (!map) return;
+
+      // Clear existing markers
+      mapMarkers.forEach(m => map.removeLayer(m));
+      mapMarkers = [];
+
+      data.forEach(item => {
+        const markerIcon = L.divIcon({
+          className: 'price-marker',
+          html: `<div style="background:#0D9488;color:white;padding:3px 6px;border-radius:4px;font-size:11px;font-weight:bold;white-space:nowrap;box-shadow:0 2px 4px rgba(0,0,0,0.2);cursor:pointer;">${item.price}</div>`
+        });
+
+        const marker = L.marker([item.lat, item.lng], { icon: markerIcon }).addTo(map);
+        marker.bindPopup(`
+          <strong>${item.address}</strong><br/>
+          Price: ${item.price}<br/>
+          Builder: ${item.builder}<br/>
+          <a href="https://www.realtor.ca/real-estate-search?m=${item.id}" target="_blank" style="color:#1E3A8A;font-weight:bold;">View Listing (#${item.id})</a>
+        `);
+        mapMarkers.push(marker);
+      });
+    }
+
+    function resetAndProcess() {
+      displayedCount = 28; // Reset back to 28 on filter/sort change
+      processProperties();
+    }
 
     function processProperties() {
       const selectedCommunity = document.getElementById('communityFilter').value;
       const sortOrder = document.getElementById('sortOrder').value;
 
       // Filter
-      let filtered = properties;
+      currentFiltered = propertiesData;
       if (selectedCommunity !== 'all') {
-        filtered = properties.filter(p => p.community.toLowerCase().includes(selectedCommunity.toLowerCase()));
+        currentFiltered = propertiesData.filter(p => p.community.toLowerCase().includes(selectedCommunity.toLowerCase()));
       }
 
       // Sort
-      filtered.sort((a, b) => {
+      currentFiltered.sort((a, b) => {
         if (sortOrder === 'price-asc') return a.priceNumeric - b.priceNumeric;
         if (sortOrder === 'price-desc') return b.priceNumeric - a.priceNumeric;
         if (sortOrder === 'dist-asc') return a.distAberhartMin - b.distAberhartMin;
@@ -646,10 +378,32 @@
         return 0;
       });
 
-      // Update count
-      document.getElementById('resultsCount').textContent = `Showing ${filtered.length} of ${properties.length} properties`;
+      // Update count & Map
+      document.getElementById('resultsCount').textContent = `Showing ${Math.min(displayedCount, currentFiltered.length)} of ${currentFiltered.length} properties`;
+      updateMapMarkers(currentFiltered);
 
-      renderProperties(filtered);
+      // Render
+      renderProperties(currentFiltered.slice(0, displayedCount));
+
+      // Handle Load More Button Visibility
+      const loadMoreBtn = document.getElementById('loadMoreBtn');
+      if (displayedCount >= currentFiltered.length) {
+        loadMoreBtn.style.display = 'none';
+      } else {
+        loadMoreBtn.style.display = 'inline-block';
+        loadMoreBtn.innerText = `Load More Properties (+${Math.min(PAGE_INCREMENT, currentFiltered.length - displayedCount)})`;
+      }
+    }
+
+    function loadMore() {
+      displayedCount += PAGE_INCREMENT;
+      processProperties();
+    }
+
+    // Direct Listing Lookup Fix
+    function openRealtorListing(mlsId) {
+      const url = `https://www.realtor.ca/real-estate-search?m=${encodeURIComponent(mlsId)}`;
+      window.open(url, '_blank');
     }
 
     function renderProperties(data) {
@@ -662,27 +416,25 @@
       }
 
       data.forEach(item => {
-        const realtorSearchUrl = `https://www.realtor.ca/search#ks=${encodeURIComponent(item.id)}`;
-
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
           <div class="card-header">
             <div class="price-row">
               <span class="price">${item.price}</span>
-              <span class="builder-tag">Builder: ${item.builder}</span>
+              <span class="builder-tag">${item.builder}</span>
             </div>
             <div class="address">${item.address}</div>
             <div class="community">Calgary NW — ${item.community}</div>
           </div>
           <div class="card-body">
             <div class="badge-container">
-              <span class="badge badge-open-house">Open House: ${item.openHouse}</span>
+              <span class="badge badge-open-house">${item.openHouse}</span>
               <span class="badge badge-suite">${item.suite}</span>
               <span class="badge badge-status">${item.status}</span>
-              ${item.walkout === 'Yes' ? '<span class="badge badge-feature">Walk-Out Basement</span>' : ''}
+              ${item.walkout === 'Yes' ? '<span class="badge badge-feature">Walk-Out</span>' : ''}
               ${item.openToBelow === 'Yes' ? '<span class="badge badge-feature">Open to Below</span>' : ''}
-              ${item.terrace === 'Yes' ? '<span class="badge badge-feature">3rd Floor / Terrace</span>' : ''}
+              ${item.terrace === 'Yes' ? '<span class="badge badge-feature">Terrace</span>' : ''}
             </div>
             <ul class="specs">
               <li>Orientation: <span>${item.facing} Facing</span></li>
@@ -698,36 +450,18 @@
             </div>
           </div>
           <div class="card-footer">
-            <a href="${realtorSearchUrl}" target="_blank" rel="noopener" class="btn">View MLS Listing (#${item.id})</a>
+            <button onclick="openRealtorListing('${item.id}')" class="btn">View MLS Listing (#${item.id})</button>
           </div>
         `;
         grid.appendChild(card);
       });
     }
 
-    // Dynamic Live Refresh Function
-    function refreshData() {
-      const btn = document.getElementById('refreshBtn');
-      btn.classList.add('spinning');
-      btn.disabled = true;
-
-      // Simulate dynamic market query / live updates
-      setTimeout(() => {
-        // Randomly shuffle prices slightly or update status to simulate live market updates
-        properties.forEach(p => {
-          if (Math.random() > 0.7) {
-            p.openHouse = "Upcoming Sat & Sun 1:00 PM - 4:00 PM";
-          }
-        });
-
-        processProperties();
-        btn.classList.remove('spinning');
-        btn.disabled = false;
-      }, 700);
-    }
-
-    // Initial render
-    processProperties();
+    // Initialize Map and Data on load
+    window.onload = function() {
+      initMap();
+      processProperties();
+    };
   </script>
 </body>
 </html>
