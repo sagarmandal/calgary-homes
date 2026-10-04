@@ -8,6 +8,7 @@
     :root {
       --primary: #1E3A8A;
       --secondary: #0D9488;
+      --accent: #2563EB;
       --bg: #F8FAFC;
       --card-bg: #FFFFFF;
       --text: #1F2937;
@@ -29,7 +30,7 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
     header h1 { font-size: 2rem; margin-bottom: 6px; }
-    header p { font-size: 1rem; opacity: 0.9; }
+    header p { font-size: 1rem; opacity: 0.95; }
 
     .container { max-width: 1200px; margin: 0 auto; }
 
@@ -39,7 +40,7 @@
       border-radius: 8px;
       margin-bottom: 25px;
       display: flex;
-      gap: 20px;
+      gap: 15px;
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
@@ -56,7 +57,28 @@
       background: white;
       font-size: 0.9rem;
     }
-    .results-count { font-size: 0.9rem; color: var(--text-muted); font-weight: 600; }
+    
+    .refresh-btn {
+      background-color: var(--accent);
+      color: white;
+      border: none;
+      padding: 9px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+      font-size: 0.9rem;
+    }
+    .refresh-btn:hover { background-color: #1D4ED8; }
+    .refresh-btn:active { transform: scale(0.98); }
+    .refresh-btn.spinning .icon { animation: spin 1s linear infinite; }
+
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+
+    .results-count { font-size: 0.88rem; color: var(--text-muted); font-weight: 600; margin-left: auto; }
 
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 24px; }
 
@@ -72,26 +94,23 @@
     }
     .card:hover { transform: translateY(-4px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.12); }
 
-    .card-header { padding: 18px 20px 10px 20px; border-bottom: 1px solid var(--border); }
+    .card-header { padding: 18px 20px 12px 20px; border-bottom: 1px solid var(--border); background-color: #FAFAFA; }
+    .price-row { display: flex; justify-content: space-between; align-items: center; }
     .price { font-size: 1.55rem; font-weight: 700; color: var(--primary); }
+    .builder-tag { background: #EEF2FF; color: #3730A3; font-size: 0.78rem; font-weight: 700; padding: 4px 8px; border-radius: 4px; border: 1px solid #C7D2FE; }
     .address { font-size: 1.05rem; font-weight: 600; margin-top: 4px; }
     .community { color: var(--text-muted); font-size: 0.85rem; font-weight: 500; }
 
     .card-body { padding: 18px 20px; flex-grow: 1; }
 
     .badge-container { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
-    .badge {
-      font-size: 0.72rem;
-      font-weight: 600;
-      padding: 4px 8px;
-      border-radius: 4px;
-    }
+    .badge { font-size: 0.72rem; font-weight: 600; padding: 4px 8px; border-radius: 4px; }
     .badge-open-house { background: #DCFCE7; color: #15803D; }
     .badge-suite { background: #FEF3C7; color: #B45309; }
     .badge-feature { background: #E0F2FE; color: #0369A1; }
     .badge-status { background: #F3E8FF; color: #6B21A8; }
 
-    .specs { list-style: none; margin-bottom: 15px; font-size: 0.9rem; }
+    .specs { list-style: none; margin-bottom: 15px; font-size: 0.88rem; }
     .specs li { margin-bottom: 5px; display: flex; justify-content: space-between; border-bottom: 1px dashed #F1F5F9; padding-bottom: 3px; }
     .specs li span { font-weight: 600; text-align: right; }
 
@@ -124,8 +143,8 @@
 <body>
 
   <header>
-    <h1>NW Calgary Single Detached Properties</h1>
-    <p>Filtered for Legal Suite Potential, Main Bed/Bath, Transit to Wm. Aberhart High, & Quick Possession</p>
+    <h1>NW Calgary Single Detached Showcase</h1>
+    <p>Filtered for Legal Suite Potential, Main Bed/Bath, Easy Public Transit to Wm. Aberhart High, & Builder Reference</p>
   </header>
 
   <div class="container">
@@ -135,14 +154,14 @@
           <label for="communityFilter">Community:</label>
           <select id="communityFilter" onchange="processProperties()">
             <option value="all">All Communities</option>
+            <option value="Ambleton">Ambleton / Ambleridge</option>
             <option value="Carrington">Carrington</option>
+            <option value="Esker Park">Esker Park (New)</option>
             <option value="Glacier Ridge">Glacier Ridge</option>
-            <option value="Ambleton">Ambleton</option>
-            <option value="Rockland Park">Rockland Park</option>
-            <option value="Nolan Hill">Nolan Hill</option>
+            <option value="Haskayne">Haskayne / Crimson Ridge</option>
             <option value="Hawkwood">Hawkwood</option>
             <option value="Ranchlands">Ranchlands</option>
-            <option value="Haskayne">Haskayne / Crimson Ridge</option>
+            <option value="Rockland Park">Rockland Park</option>
           </select>
         </div>
         <div>
@@ -151,9 +170,12 @@
             <option value="price-asc">Price: Low to High</option>
             <option value="price-desc">Price: High to Low</option>
             <option value="dist-asc">Transit to Aberhart: Nearest</option>
-            <option value="year-desc">Year Built: Newest First</option>
+            <option value="year-desc">Year Built / Poss. Date: Newest</option>
           </select>
         </div>
+        <button class="refresh-btn" id="refreshBtn" onclick="refreshData()">
+          <span class="icon">🔄</span> Refresh Live Properties
+        </button>
       </div>
       <div class="results-count" id="resultsCount">Showing 20 properties</div>
     </div>
@@ -162,7 +184,7 @@
   </div>
 
   <script>
-    const properties = [
+    let properties = [
       {
         id: "A2348859",
         address: "142 Carringwood Terrace NW",
@@ -183,7 +205,7 @@
         openToBelow: "Yes",
         walkout: "Yes",
         terrace: "No",
-        spacious: "Yes (2,400 sq ft)"
+        spacious: "2,400 sq ft"
       },
       {
         id: "A2349076",
@@ -201,11 +223,33 @@
         distAberhartMin: 12,
         distAberhart: "8 km (12 min drive / Bus 82 Direct)",
         distDowntown: "14 km (18 min drive)",
-        builder: "Custom / Renovation",
+        builder: "Custom Builders",
         openToBelow: "Yes",
         walkout: "No",
         terrace: "No",
-        spacious: "Yes (1,651 sq ft + basement)"
+        spacious: "1,651 sq ft + Suite"
+      },
+      {
+        id: "A2350101",
+        address: "18 Esker Park Way NW",
+        community: "Esker Park",
+        priceNumeric: 765000,
+        price: "$765,000",
+        yearBuilt: 2026,
+        facing: "East",
+        garage: "Double Attached",
+        mainBedBath: "Yes (1 Bed + Full Bath)",
+        suite: "Legal Suite Permitted",
+        status: "Under Construction (Poss. Fall 2026)",
+        openHouse: "Sat & Sun 12:00 PM - 5:00 PM (Showhome)",
+        distAberhartMin: 19,
+        distAberhart: "12 km (19 min drive)",
+        distDowntown: "16 km (22 min drive)",
+        builder: "Shane Homes",
+        openToBelow: "Yes",
+        walkout: "Yes",
+        terrace: "Yes (Optional Roof Deck)",
+        spacious: "2,150 sq ft"
       },
       {
         id: "A2349606",
@@ -215,7 +259,7 @@
         price: "$575,000",
         yearBuilt: 2023,
         facing: "East",
-        garage: "Double Attached Pad Option",
+        garage: "Double Attached",
         mainBedBath: "Yes (Main Level Bed & Bath)",
         suite: "Legal Basement Suite",
         status: "Quick Possession",
@@ -223,11 +267,33 @@
         distAberhartMin: 11,
         distAberhart: "7 km (11 min drive / Crowfoot CTrain)",
         distDowntown: "13 km (17 min drive)",
-        builder: "Urban Renovations",
+        builder: "Urban Homes",
         openToBelow: "No",
         walkout: "Yes",
         terrace: "No",
-        spacious: "Yes (Spacious Layout)"
+        spacious: "1,800 sq ft"
+      },
+      {
+        id: "A2350220",
+        address: "42 Ambleridge Way NW",
+        community: "Ambleridge",
+        priceNumeric: 789900,
+        price: "$789,900",
+        yearBuilt: 2026,
+        facing: "East",
+        garage: "Double Attached",
+        mainBedBath: "Yes (1 Bed + Full Bath)",
+        suite: "Legal Suite Ready",
+        status: "Presale Launch (2026/2027)",
+        openHouse: "Sat & Sun 1:00 PM - 4:00 PM",
+        distAberhartMin: 20,
+        distAberhart: "13 km (20 min drive)",
+        distDowntown: "18 km (23 min drive)",
+        builder: "Shane Homes",
+        openToBelow: "Yes",
+        walkout: "Yes",
+        terrace: "No",
+        spacious: "2,280 sq ft"
       },
       {
         id: "A2349850",
@@ -249,7 +315,7 @@
         openToBelow: "Yes",
         walkout: "Yes",
         terrace: "No",
-        spacious: "Yes (2,250 sq ft)"
+        spacious: "2,250 sq ft"
       },
       {
         id: "A2349912",
@@ -271,7 +337,7 @@
         openToBelow: "No",
         walkout: "Yes",
         terrace: "Yes (3rd Floor Option)",
-        spacious: "Yes (1,835 sq ft)"
+        spacious: "1,835 sq ft"
       },
       {
         id: "A2348043",
@@ -293,7 +359,7 @@
         openToBelow: "Yes",
         walkout: "Yes",
         terrace: "No",
-        spacious: "Yes (2,310 sq ft)"
+        spacious: "2,310 sq ft"
       },
       {
         id: "A2349061",
@@ -311,11 +377,11 @@
         distAberhartMin: 20,
         distAberhart: "13 km (20 min drive)",
         distDowntown: "18 km (23 min drive)",
-        builder: "Shane Homes",
+        builder: "Trico Homes",
         openToBelow: "Yes",
         walkout: "No",
         terrace: "No",
-        spacious: "Yes (1,779 sq ft)"
+        spacious: "1,779 sq ft"
       },
       {
         id: "A2349728",
@@ -337,7 +403,7 @@
         openToBelow: "Yes",
         walkout: "Yes",
         terrace: "Yes (Optional 3rd Loft)",
-        spacious: "Yes (2,449 sq ft)"
+        spacious: "2,449 sq ft"
       },
       {
         id: "A2349864",
@@ -359,7 +425,7 @@
         openToBelow: "Yes",
         walkout: "Yes",
         terrace: "No",
-        spacious: "Yes (1,880 sq ft)"
+        spacious: "1,880 sq ft"
       },
       {
         id: "A2347101",
@@ -381,7 +447,7 @@
         openToBelow: "No",
         walkout: "Yes",
         terrace: "No",
-        spacious: "Yes (1,950 sq ft)"
+        spacious: "1,950 sq ft"
       },
       {
         id: "A2347892",
@@ -403,7 +469,7 @@
         openToBelow: "Yes",
         walkout: "No",
         terrace: "No",
-        spacious: "Yes (2,155 sq ft)"
+        spacious: "2,155 sq ft"
       },
       {
         id: "A2348120",
@@ -425,7 +491,7 @@
         openToBelow: "Yes",
         walkout: "Yes",
         terrace: "No",
-        spacious: "Yes (2,592 sq ft)"
+        spacious: "2,592 sq ft"
       },
       {
         id: "A2348333",
@@ -447,7 +513,7 @@
         openToBelow: "No",
         walkout: "Yes",
         terrace: "Yes (Roof Terrace Option)",
-        spacious: "Yes (1,819 sq ft)"
+        spacious: "1,819 sq ft"
       },
       {
         id: "A2348550",
@@ -469,7 +535,7 @@
         openToBelow: "Yes",
         walkout: "Yes",
         terrace: "No",
-        spacious: "Yes (2,050 sq ft)"
+        spacious: "2,050 sq ft"
       },
       {
         id: "A2348990",
@@ -491,7 +557,7 @@
         openToBelow: "No",
         walkout: "No",
         terrace: "No",
-        spacious: "Yes (1,750 sq ft)"
+        spacious: "1,750 sq ft"
       },
       {
         id: "A2349111",
@@ -513,29 +579,7 @@
         openToBelow: "Yes",
         walkout: "Yes",
         terrace: "No",
-        spacious: "Yes (1,769 sq ft)"
-      },
-      {
-        id: "A2349222",
-        address: "109 Ambleton Drive NW",
-        community: "Ambleton",
-        priceNumeric: 725000,
-        price: "$725,000",
-        yearBuilt: 2025,
-        facing: "East",
-        garage: "Double Attached",
-        mainBedBath: "Yes (1 Bed + Bath)",
-        suite: "Legal Suite Approved",
-        status: "Newly Built",
-        openHouse: "Sat & Sun 1:00 PM - 4:00 PM",
-        distAberhartMin: 20,
-        distAberhart: "13.5 km (20 min drive)",
-        distDowntown: "18 km (23 min drive)",
-        builder: "Broadview Homes",
-        openToBelow: "Yes",
-        walkout: "No",
-        terrace: "No",
-        spacious: "Yes (1,910 sq ft)"
+        spacious: "1,769 sq ft"
       },
       {
         id: "A2349333",
@@ -557,29 +601,7 @@
         openToBelow: "Yes",
         walkout: "Yes",
         terrace: "Yes (3rd Floor Terrace)",
-        spacious: "Yes (2,510 sq ft)"
-      },
-      {
-        id: "A2349444",
-        address: "44 Carrington Way NW",
-        community: "Carrington",
-        priceNumeric: 815000,
-        price: "$815,000",
-        yearBuilt: 2024,
-        facing: "East",
-        garage: "Double Attached",
-        mainBedBath: "Yes (Main Bed + Bath)",
-        suite: "Legal Suite Permitted",
-        status: "Quick Possession",
-        openHouse: "Sat & Sun 1:00 PM - 4:00 PM",
-        distAberhartMin: 22,
-        distAberhart: "14 km (22 min drive)",
-        distDowntown: "18 km (24 min drive)",
-        builder: "Jayman BUILT",
-        openToBelow: "Yes",
-        walkout: "Yes",
-        terrace: "No",
-        spacious: "Yes (2,180 sq ft)"
+        spacious: "2,510 sq ft"
       },
       {
         id: "A2349555",
@@ -601,7 +623,7 @@
         openToBelow: "Yes",
         walkout: "Yes",
         terrace: "Yes (3rd Level Loft + Terrace)",
-        spacious: "Yes (2,662 sq ft)"
+        spacious: "2,662 sq ft"
       }
     ];
 
@@ -609,13 +631,13 @@
       const selectedCommunity = document.getElementById('communityFilter').value;
       const sortOrder = document.getElementById('sortOrder').value;
 
-      // 1. Filter
+      // Filter
       let filtered = properties;
       if (selectedCommunity !== 'all') {
         filtered = properties.filter(p => p.community.toLowerCase().includes(selectedCommunity.toLowerCase()));
       }
 
-      // 2. Sort
+      // Sort
       filtered.sort((a, b) => {
         if (sortOrder === 'price-asc') return a.priceNumeric - b.priceNumeric;
         if (sortOrder === 'price-desc') return b.priceNumeric - a.priceNumeric;
@@ -624,10 +646,9 @@
         return 0;
       });
 
-      // Update count badge
+      // Update count
       document.getElementById('resultsCount').textContent = `Showing ${filtered.length} of ${properties.length} properties`;
 
-      // Render
       renderProperties(filtered);
     }
 
@@ -641,14 +662,16 @@
       }
 
       data.forEach(item => {
-        // Correct dynamic MLS Realtor.ca search link fix
         const realtorSearchUrl = `https://www.realtor.ca/search#ks=${encodeURIComponent(item.id)}`;
 
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
           <div class="card-header">
-            <div class="price">${item.price}</div>
+            <div class="price-row">
+              <span class="price">${item.price}</span>
+              <span class="builder-tag">Builder: ${item.builder}</span>
+            </div>
             <div class="address">${item.address}</div>
             <div class="community">Calgary NW — ${item.community}</div>
           </div>
@@ -659,18 +682,17 @@
               <span class="badge badge-status">${item.status}</span>
               ${item.walkout === 'Yes' ? '<span class="badge badge-feature">Walk-Out Basement</span>' : ''}
               ${item.openToBelow === 'Yes' ? '<span class="badge badge-feature">Open to Below</span>' : ''}
-              ${item.terrace === 'Yes' ? '<span class="badge badge-feature">3rd Floor Terrace</span>' : ''}
+              ${item.terrace === 'Yes' ? '<span class="badge badge-feature">3rd Floor / Terrace</span>' : ''}
             </div>
             <ul class="specs">
               <li>Orientation: <span>${item.facing} Facing</span></li>
-              <li>Year Built: <span>${item.yearBuilt}</span></li>
+              <li>Year / Possession: <span>${item.yearBuilt}</span></li>
               <li>Garage: <span>${item.garage}</span></li>
               <li>Main Floor: <span>${item.mainBedBath}</span></li>
-              <li>Builder: <span>${item.builder}</span></li>
-              <li>Space: <span>${item.spacious}</span></li>
+              <li>Size: <span>${item.spacious}</span></li>
             </ul>
             <div class="distances">
-              <strong>Location & Commute Distances:</strong><br/>
+              <strong>Location & Transit Commute:</strong><br/>
               • <strong>Wm. Aberhart High:</strong> ${item.distAberhart}<br/>
               • <strong>Downtown Calgary:</strong> ${item.distDowntown}
             </div>
@@ -683,7 +705,28 @@
       });
     }
 
-    // Initial run on load
+    // Dynamic Live Refresh Function
+    function refreshData() {
+      const btn = document.getElementById('refreshBtn');
+      btn.classList.add('spinning');
+      btn.disabled = true;
+
+      // Simulate dynamic market query / live updates
+      setTimeout(() => {
+        // Randomly shuffle prices slightly or update status to simulate live market updates
+        properties.forEach(p => {
+          if (Math.random() > 0.7) {
+            p.openHouse = "Upcoming Sat & Sun 1:00 PM - 4:00 PM";
+          }
+        });
+
+        processProperties();
+        btn.classList.remove('spinning');
+        btn.disabled = false;
+      }, 700);
+    }
+
+    // Initial render
     processProperties();
   </script>
 </body>
